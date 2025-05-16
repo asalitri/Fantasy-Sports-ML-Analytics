@@ -1,0 +1,13 @@
+# Don't track your virtual environment
+.venv/
+
+# Don't track API credentials
+oauth2.json
+
+# Don't track config with league ID
+src/config.py
+
+# Ignore compiled files
+__pycache__/
+*.pyc
+
