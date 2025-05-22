@@ -24,8 +24,7 @@ def get_owner_guids(start_year=2017, end_year=2025):
     oauth = OAuth2(None, None, from_file='oauth2.json')
     gm = Game(oauth, 'nfl')
 
-    seen_guids = set()
-    for year in range(start_year, end_year + 1):
+    for index, year in enumerate(range(start_year, end_year + 1)):
         league_id = LEAGUE_IDS.get(year)
         if not league_id:
             print(f"Invalid year: {year}")
@@ -35,18 +34,20 @@ def get_owner_guids(start_year=2017, end_year=2025):
         settings = league.settings()
         teams = league.teams()
 
+        team_counter_yearly = 0
         for team_key, team_info in teams.items():
             team_name = team_info.get("name", "Unnamed Team")
             managers = team_info.get("managers", [])
 
             for manager_entry in managers:
+                team_counter_yearly += 1
                 manager = manager_entry.get("manager", {})
                 nickname = manager.get("nickname", "Unknown")
                 guid = manager.get("guid", "Unknown")
 
-                if guid not in seen_guids:
-                    print(f"({year}) {team_name} - {nickname}, {guid}")
-                    seen_guids.add(guid)
+                print(f"({year}) {team_counter_yearly}. {team_name} - {nickname}, {guid}")
+        if index != end_year - start_year:
+            print("------------------------------")  # Separates each league year
 
 if __name__ == "__main__":
     get_owner_guids()
