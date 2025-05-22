@@ -1,13 +1,13 @@
 from yahoo_oauth import OAuth2
 from yahoo_fantasy_api import Game
-from src.config import LEAGUE_ID_2024
+from src.config import LEAGUE_IDS
 import pandas as pd
 import os
 
 
 oauth = OAuth2(None, None, from_file='oauth2.json')
 gm = Game(oauth, 'nfl')
-league = gm.to_league(LEAGUE_ID_2024)
+league = gm.to_league(LEAGUE_IDS[2024])
 
 matchup_data = []
 
