@@ -11,3 +11,5 @@ src/config.py
 __pycache__/
 *.pyc
 
+# Keep GUID for each player hidden
+.valid_owner_map.csv
