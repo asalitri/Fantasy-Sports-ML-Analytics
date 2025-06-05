@@ -39,9 +39,9 @@ def get_display_name(guid, team_name, valid_map, manual_map):
     return manual_map.get(team_name, "Unknown")
 
 # finds result of game (for player_score)
-# returned as: "Win", "Loss", or "Tie"
+# returned as: "Win", "Loss", "Tie", or "N/A"
 def game_result(player_score, opponent_score):
-    if not player_score or not opponent_score:
+    if not (player_score and opponent_score) or (float(player_score) == 0 and float(opponent_score) == 0):
         return "N/A"
     return "Win" if float(player_score) > float(opponent_score) else "Loss" if float(player_score) < float(opponent_score) else "Tie"
 
