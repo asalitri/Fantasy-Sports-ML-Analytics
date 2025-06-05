@@ -6,7 +6,6 @@ from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
 from src.matchup_utils import (
     load_valid_map,
     load_manual_map,
-    get_display_name,
     game_result,
     extract_team_data
 )
