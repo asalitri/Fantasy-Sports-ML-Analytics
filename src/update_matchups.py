@@ -27,6 +27,8 @@ def get_week_matchups(year, week, oauth, valid_map, manual_map):
     matchups = raw_data['fantasy_content']['league'][1]['scoreboard']['0']['matchups']
     week_data = []
 
+    is_playoff = (max_week - week < 3)  # if matchup is a playoff game
+
     for matchup in matchups.values():
         if not (isinstance(matchup, dict) and "matchup" in matchup):
             continue
@@ -43,6 +45,7 @@ def get_week_matchups(year, week, oauth, valid_map, manual_map):
         week_data.append({
             "year": year,
             "week": week,
+            "is_playoff": is_playoff,
             "team_1": team_1_display,
             "team_1_score": team_1_score,
             "team_1_proj": team_1_proj,
@@ -85,7 +88,7 @@ def update_week_csv(year, week):
         writer.writeheader()
         for row in existing_data:
             writer.writerow(row)
-    print(f"\nMatchups from {year} week {week} successfully saved to {OUTPUT_FILE}.")
+    print(f"Matchups from {year} week {week} successfully saved to {OUTPUT_FILE}.")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:  # checks for exactly two args (year, week) in addition to calling for the .py file

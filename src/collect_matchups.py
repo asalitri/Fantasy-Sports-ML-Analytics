@@ -52,9 +52,12 @@ def collect_matchups():
                     team_1_result = game_result(team_1_score, team_2_score)
                     team_2_result = game_result(team_2_score, team_1_score)
 
+                    is_playoff = (max_week - week < 3)  # if matchup is a playoff game
+
                     all_matchups.append({
                         "year": year,
                         "week": week,
+                        "is_playoff": is_playoff,
                         "team_1": team_1_display,
                         "team_1_score": team_1_score,
                         "team_1_proj": team_1_proj,
@@ -82,7 +85,7 @@ def save_to_csv(matchups):
 
     os.makedirs("data", exist_ok=True)
     fieldnames = [
-        "year", "week", "team_1", "team_1_score", "team_1_proj", "team_1_result",
+        "year", "week", "is_playoff", "team_1", "team_1_score", "team_1_proj", "team_1_result",
         "team_2", "team_2_score", "team_2_proj", "team_2_result"
     ]
     with open(OUTPUT_FILE, "w", newline='') as f:
@@ -90,7 +93,7 @@ def save_to_csv(matchups):
         writer.writeheader()
         for row in matchups:
             writer.writerow(row)
-    print(f"\nMatchups successfully saved to {OUTPUT_FILE}.")
+    print(f"Matchups successfully saved to {OUTPUT_FILE}.")
                     
 if __name__ == "__main__":
     matchups = collect_matchups()
