@@ -89,7 +89,7 @@ def update_week_csv(year, week):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:  # checks for exactly two args (year, week) in addition to calling for the .py file
-        print("Usage: python update_matchups.py <year> <week>")
+        print("Usage: python3 -m src.update_matchups <year> <week>")
         sys.exit(1)
     
     try:
@@ -97,7 +97,10 @@ if __name__ == "__main__":
         week = int(sys.argv[2])
     except ValueError:
         print("Error: <year> and <week> parameters must be integers.")
-        print("Usage: python update_matchups.py <year> <week>")
+        print("Usage: python3 -m src.update_matchups <year> <week>")
         sys.exit(1)
-
-    update_week_csv(year, week)
+    try:
+        update_week_csv(year, week)
+    except ValueError as e:
+        print(e)
+        sys.exit(1)
