@@ -91,21 +91,26 @@ def load_matchups():  # return list of dicts for matchup data
     with open(MATCHUP_FILE, newline="") as f:
         return list(csv.DictReader(f))
 
-def update_regular_season_standings(year):
+def update_season_standings(year):
     if int(year) not in LEAGUE_IDS:
         raise ValueError(f"Invalid year: {year}")
     matchups = load_matchups()
     reg_season_matchups = [m for m in matchups if m["year"] == str(year) and m["is_playoff"] == "False"]
-    filename = f"{STANDINGS_DIRECTORY}/standings_regular_{year}.csv"
+    all_season_matchups = [m for m in matchups if m["year"] == str(year)]
+    os.makedirs(f"{STANDINGS_DIRECTORY}/{year}", exist_ok=True)
+    reg_filename = f"{STANDINGS_DIRECTORY}/{year}/regular.csv"
+    raw_filename = f"{STANDINGS_DIRECTORY}/{year}/raw.csv"
     try:
-        save_standings(filename, reg_season_matchups)
-        print(f"\n{year} regular season standings successfully updated in {filename}.")
+        save_standings(reg_filename, reg_season_matchups)
+        print(f"\n{year} regular season standings successfully updated in {reg_filename}.")
+        save_standings(raw_filename, all_season_matchups)
+        print(f"{year} raw standings successfully updated in {raw_filename}.")
     except ValueError as e:
         print(f"{e}: {year}")
 
 def update_all_time_standings():
     matchups = load_matchups()
-    filename = f"{STANDINGS_DIRECTORY}/standings_all_time.csv"
+    filename = f"{STANDINGS_DIRECTORY}/all_time.csv"
     save_standings(filename, matchups)
     print(f"\nAll time standings successfully updated in {filename}.")
 
@@ -113,23 +118,23 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python -m src.standings regular_season <year>")
+        print("  python -m src.standings season <year>")
         print("  python -m src.standings all_time")
         sys.exit(1)
 
     command = sys.argv[1]
 
-    if command == "regular_season":
+    if command == "season":
         if len(sys.argv) != 3:
-            print("Usage: python3 -m src.standings regular_season <year>")
+            print("Usage: python3 -m src.standings season <year>")
             sys.exit(1)
         year = sys.argv[2]
         try:
-            update_regular_season_standings(year)
+            update_season_standings(year)
         except ValueError as e:
             print(e)
             sys.exit(1)
     elif command == "all_time":
         update_all_time_standings()
     else:
-        print("Unknown command. Use 'regular_season' or 'all_time'.")
+        print("Unknown command. Use 'season' or 'all_time'.")
