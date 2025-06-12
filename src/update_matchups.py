@@ -2,7 +2,7 @@ import os
 import csv
 import sys
 from yahoo_oauth import OAuth2
-from yahoo_fantasy_api import Game
+from yahoo_fantasy_api import League
 from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
 from src.matchup_utils import (
     load_valid_map,
@@ -22,7 +22,7 @@ def get_week_matchups(year, week, oauth, valid_map, manual_map):
     if not (1 <= week <= max_week):
         raise ValueError(f"Invalid week: {week} for {year} season. Valid weeks are 1 to {max_week}.")
 
-    league = Game(oauth, "nfl").to_league(league_id)
+    league = League(oauth, league_id)
     raw_data = league.matchups(week)
     matchups = raw_data['fantasy_content']['league'][1]['scoreboard']['0']['matchups']
     week_data = []
@@ -88,7 +88,7 @@ def update_week_csv(year, week):
         writer.writeheader()
         for row in existing_data:
             writer.writerow(row)
-    print(f"Matchups from {year} week {week} successfully saved to {OUTPUT_FILE}.")
+    print(f"\nMatchups from {year} week {week} successfully saved to {OUTPUT_FILE}.")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:  # checks for exactly two args (year, week) in addition to calling for the .py file

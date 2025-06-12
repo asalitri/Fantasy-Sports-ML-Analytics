@@ -1,7 +1,8 @@
 import os
 import csv
+import sys
 from yahoo_oauth import OAuth2
-from yahoo_fantasy_api import Game
+from yahoo_fantasy_api import League
 from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
 from src.matchup_utils import (
     load_valid_map,
@@ -23,7 +24,6 @@ def collect_matchups():
     print("beginning collect_matchups()")
 
     oauth = OAuth2(None, None, from_file="oauth2.json")
-    gm = Game(oauth, "nfl")
     valid_map = load_valid_map()
     manual_map = load_manual_map()
     all_matchups = []
@@ -31,7 +31,7 @@ def collect_matchups():
     print("starting loop in collect_matchups()")
 
     for year, league_id in LEAGUE_IDS.items():
-        league = gm.to_league(league_id)
+        league = League(oauth, league_id)
 
         max_week = MAX_WEEKS_BY_YEAR.get(year, 17)  # defaulted to 17 for future years if year not listed
         for week in range(1, max_week + 1):
@@ -93,7 +93,7 @@ def save_to_csv(matchups):
         writer.writeheader()
         for row in matchups:
             writer.writerow(row)
-    print(f"Matchups successfully saved to {OUTPUT_FILE}.")
+    print(f"\nMatchups successfully saved to {OUTPUT_FILE}.")
                     
 if __name__ == "__main__":
     matchups = collect_matchups()

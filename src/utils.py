@@ -1,3 +1,4 @@
+import sys
 from yahoo_oauth import OAuth2
 from yahoo_fantasy_api import Game
 from src.config import LEAGUE_IDS
@@ -50,4 +51,18 @@ def get_owner_guids(start_year=2017, end_year=2025):
             print("------------------------------")  # Separates each league year
 
 if __name__ == "__main__":
-    get_owner_guids()
+    if len(sys.argv) != 2:
+        print("Usage:")
+        print("  python -m src.utils league_ids")
+        print("  python -m src.utils owner_guids")
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == "league_ids":
+        get_league_ids()
+    elif command == "owner_guids":
+        get_owner_guids()
+    else:
+        print("Unknown command. Use 'league_ids' or 'owner_guids'.")
+        sys.exit(1)
