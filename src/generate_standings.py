@@ -5,10 +5,13 @@ from yahoo_oauth import OAuth2
 from yahoo_fantasy_api import League
 from collections import defaultdict
 from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
-from src.matchup_utils import (
-    load_valid_map,
-    load_manual_map,
-    get_display_name
+from src.standings.utils import (
+    win_pct,
+    is_complete_year,
+    playoff_four_teams,
+    playoff_six_teams,
+    playoff_seven_teams,
+    playoff_eight_teams
 )
 
 MATCHUP_FILE = "data/matchup_data.csv"
@@ -17,262 +20,28 @@ ALL_TIME_FILE = "standings_all_time.csv"
 
 os.makedirs(STANDINGS_DIRECTORY, exist_ok=True)
 
-def win_pct(wins, ties, gp):
-    return (wins + 0.5 * ties) / gp if gp > 0 else 0.0
+def load_matchups():
+    """
+    Loads matchup data from the matchup CSV file.
 
-def load_matchups():  # return list of dicts for matchup data
+    Returns:
+        list[dict]: List of matchups.
+    """
     with open(MATCHUP_FILE, newline="") as f:
         return list(csv.DictReader(f))
 
-def playoff_four_teams(teams_set, data):
-    teams_set = teams_set.copy()
-    playoff_week_1 = min(int(m["week"]) for m in data)
-    week_2_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 1]
-    week_3_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 2]
-    final_rank = {}
-
-    third_place_gm = set()
-    for game in week_2_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-        else:
-            loser = team_1
-
-        if loser in teams_set:
-            third_place_gm.add(loser)
-            teams_set.remove(loser)
-
-    for game in week_3_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in third_place_gm:
-            final_rank[loser] = 4
-            final_rank[winner] = 3
-        elif loser in teams_set:
-            final_rank[loser] = 2
-            final_rank[winner] = 1
-
-    return final_rank
-
-def playoff_six_teams(teams_set, data):  # takes in set of 6 teams, playoff data, and returns dict mapping teams to final rank
-    teams_set = teams_set.copy()
-    playoff_week_1 = min(int(m["week"]) for m in data)
-    week_1_matchups = [m for m in data if int(m["week"]) == playoff_week_1]
-    week_2_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 1]
-    week_3_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 2]
-    final_rank = {}
-
-    fifth_place_gm = set()
-    for game in week_1_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-        else:
-            loser = team_1
-
-        if loser in teams_set:
-            fifth_place_gm.add(loser)
-            teams_set.remove(loser)
-
-    championship_gm = set()
-    third_place_gm = set()
-    for game in week_2_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in teams_set:
-            third_place_gm.add(loser)
-            championship_gm.add(winner)
-        elif loser in fifth_place_gm:
-            final_rank[loser] = 6
-            final_rank[winner] = 5
-
-    for game in week_3_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in championship_gm:
-            final_rank[loser] = 2
-            final_rank[winner] = 1
-        elif loser in third_place_gm:
-            final_rank[loser] = 4
-            final_rank[winner] = 3
-    
-    return final_rank
-
-def playoff_seven_teams(teams_set, data):
-    teams_set = teams_set.copy()
-    playoff_week_1 = min(int(m["week"]) for m in data)
-    week_1_matchups = [m for m in data if int(m["week"]) == playoff_week_1]
-    week_2_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 1]
-    week_3_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 2]
-    final_rank = {}
-
-    consolation = set()
-    for game in week_1_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-        else:
-            loser = team_1
-
-        if loser in teams_set:
-            consolation.add(loser)
-            teams_set.remove(loser)
-
-    championship_gm = set()
-    third_place_gm = set()
-    for game in week_2_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in teams_set:
-            third_place_gm.add(loser)
-            championship_gm.add(winner)
-        elif loser in consolation:
-            final_rank[loser] = 7
-            consolation.remove(loser)
-
-    for game in week_3_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in championship_gm:
-            final_rank[loser] = 2
-            final_rank[winner] = 1
-        elif loser in third_place_gm:
-            final_rank[loser] = 4
-            final_rank[winner] = 3
-        elif loser in consolation:
-            final_rank[loser] = 6
-            final_rank[winner] = 5
-    
-    return final_rank
-
-def playoff_eight_teams(teams_set, data):
-    teams_set = teams_set.copy()
-    playoff_week_1 = min(int(m["week"]) for m in data)
-    week_1_matchups = [m for m in data if int(m["week"]) == playoff_week_1]
-    week_2_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 1]
-    week_3_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 2]
-    final_rank = {}
-
-    consolation = set()
-    for game in week_1_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Loss":
-            loser = team_1
-        else:
-            loser = team_2
-
-        if loser in teams_set:
-            consolation.add(loser)
-            teams_set.remove(loser)
-
-    championship_gm = set()
-    third_place_gm = set()
-    fifth_place_gm = set()
-    for game in week_2_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in teams_set:
-            third_place_gm.add(loser)
-            championship_gm.add(winner)
-        elif loser in consolation:
-            fifth_place_gm.add(winner)
-            consolation.remove(winner)
-
-    for game in week_3_matchups:
-        team_1 = game["team_1"]
-        team_2 = game["team_2"]
-        result = game["team_1_result"]
-
-        if result == "Win":
-            loser = team_2
-            winner = team_1
-        else:
-            loser = team_1
-            winner = team_2
-
-        if loser in championship_gm:
-            final_rank[loser] = 2
-            final_rank[winner] = 1
-        elif loser in third_place_gm:
-            final_rank[loser] = 4
-            final_rank[winner] = 3
-        elif loser in fifth_place_gm:
-            final_rank[loser] = 6
-            final_rank[winner] = 5
-        elif loser in consolation:
-            final_rank[loser] = 8
-            final_rank[winner] = 7
-    
-    return final_rank
-
 def calculate_standings(data):
+    """
+    Compiles win/loss records, points for/against, win percentage, games played, and games back from top ranked team.
+
+    Sorts standings via win percentage and points for as tiebreaker (in decending order). 
+
+    Args:
+        data (list[dict]): List of matchup records.
+
+    Returns:
+        list[tuple]: Sorted standings as (team_name, stats_dict).
+    """
     standings = defaultdict(lambda: {"W": 0, "L": 0, "T": 0, "GP": 0, "Pct": 0.0, "PF": 0.0, "PA": 0.0})  # initializes data to zeros when new player is found, dict of dicts
 
     for row in data:
@@ -333,6 +102,15 @@ def calculate_standings(data):
     return sorted_standings
 
 def get_final_standings(year):
+    """
+    Computes final standings (after completion of playoffs) for a given year, including playoff and consolation brackets.
+
+    Args:
+        year (str or int): Season year.
+
+    Returns:
+        list[tuple]: Sorted final standings as (team_name, stats_dict).
+    """
     league_id = LEAGUE_IDS[int(year)]
     oauth = OAuth2(None, None, from_file="oauth2.json")
     league = League(oauth, league_id)
@@ -397,6 +175,13 @@ def get_final_standings(year):
     return sorted_standings
 
 def save_standings(output_file, data):
+    """
+    Saves calculated standings to a CSV file. Only used for regular and raw standings.
+
+    Args:
+        output_file (str): Output CSV filepath.
+        data (list[dict]): List of matchup records.
+    """
     try:
         standings = calculate_standings(data)
     except ValueError as e:
@@ -413,6 +198,13 @@ def save_standings(output_file, data):
             writer.writerow(row)
 
 def save_final_standings(output_file, year):
+    """
+    Saves final standings for a given year to a CSV file.
+
+    Args:
+        output_file (str): Output CSV filepath.
+        year (str or int): Season year.
+    """
     try:
         standings = get_final_standings(year)
     except Exception as e:
@@ -428,25 +220,13 @@ def save_final_standings(output_file, year):
             row.update(stats)
             writer.writerow(row)
 
-def is_complete_year(year, matchups):  # returns boolean if the given season is complete
-    final_week = MAX_WEEKS_BY_YEAR[int(year)]
-    final_week_matchups = [
-        m for m in matchups
-        if int(m["year"]) == int(year) and int(m["week"]) == final_week
-    ]
-
-    for m in final_week_matchups:
-        if (
-            m["team_1_result"] == "N/A" or
-            m["team_2_result"] == "N/A" or
-            not m["team_1_score"] or
-            not m["team_2_score"]
-        ):
-            return False
-
-    return bool(final_week_matchups)
-
 def update_season_standings(year):
+    """
+    Updates all applicable standings files for a given season (year). Prints which files have been successfully created.
+
+    Args:
+        year (str or int): Season year.
+    """
     if int(year) not in LEAGUE_IDS:
         raise ValueError(f"Invalid year: {year}")
     matchups = load_matchups()
@@ -471,6 +251,9 @@ def update_season_standings(year):
         print(f"{e}: {year}")
 
 def update_all_time_standings():
+    """
+    Updates and saves the all-time standings across all seasons. Prints on success.
+    """
     matchups = load_matchups()
     filename = f"{STANDINGS_DIRECTORY}/all_time.csv"
     save_standings(filename, matchups)
