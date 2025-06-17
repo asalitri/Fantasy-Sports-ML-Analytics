@@ -5,9 +5,8 @@ from yahoo_oauth import OAuth2
 from yahoo_fantasy_api import League
 from collections import defaultdict
 from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
-from src.standings.utils import (
+from src.standings_utils import (
     win_pct,
-    is_complete_year,
     playoff_four_teams,
     playoff_six_teams,
     playoff_seven_teams,
@@ -29,6 +28,35 @@ def load_matchups():
     """
     with open(MATCHUP_FILE, newline="") as f:
         return list(csv.DictReader(f))
+
+def is_complete_year(year, matchups):
+    """
+    Checks whether the given season year has a complete final week.
+
+    Args:
+        year (str or int): Season year.
+        matchups (list[dict]): List of matchups.
+
+    Returns:
+        bool: True if final week is complete, False otherwise.
+    """
+    final_week = MAX_WEEKS_BY_YEAR[int(year)]
+
+    final_week_matchups = [
+        m for m in matchups
+        if int(m["year"]) == int(year) and int(m["week"]) == final_week
+    ]
+
+    for m in final_week_matchups:
+        if (
+            m["team_1_result"] == "N/A" or
+            m["team_2_result"] == "N/A" or
+            not m["team_1_score"] or
+            not m["team_2_score"]
+        ):
+            return False
+
+    return bool(final_week_matchups)
 
 def calculate_standings(data):
     """
@@ -89,6 +117,10 @@ def calculate_standings(data):
 
     for rank, (team, stats) in enumerate(sorted_standings, start=1):
         stats["Rank"] = rank
+        pf_rounded = round(stats["PF"], 2)
+        pa_rounded = round(stats["PA"], 2)
+        stats["PF"] = pf_rounded
+        stats["PA"] = pa_rounded
 
     leader_team, leader_stats = sorted_standings[0]  # leader name and stats (to reference for GB)
     sorted_standings[0][1]["GB"] = 0.0  # sets leader GB to zero
