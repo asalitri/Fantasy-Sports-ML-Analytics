@@ -466,6 +466,8 @@ def update_season_standings(year):
         if is_complete_year(year, matchups):
             print(f"{year} final standings successfully updated in {final_filename}.")
     except ValueError as e:
+        if os.path.isdir(f"{STANDINGS_DIRECTORY}/{year}") and not os.listdir(f"{STANDINGS_DIRECTORY}/{year}"):
+            os.rmdir(f"{STANDINGS_DIRECTORY}/{year}")
         print(f"{e}: {year}")
 
 def update_all_time_standings():
