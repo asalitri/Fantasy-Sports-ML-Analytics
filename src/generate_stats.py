@@ -1,7 +1,23 @@
 import csv
+import sys
+import os
 from collections import defaultdict
 from statistics import mean, stdev
-from src.config import MAX_WEEKS_BY_YEAR
+from src.config import MAX_WEEKS_BY_YEAR, MATCHUP_FILE
+
+STATISTICS_DIRECTORY = "statistics"
+
+os.makedirs(STATISTICS_DIRECTORY, exist_ok=True)
+
+def load_matchups():
+    """
+    Loads matchup data from the matchup CSV file.
+
+    Returns:
+        list[dict]: List of matchups.
+    """
+    with open(MATCHUP_FILE, newline="") as f:
+        return list(csv.DictReader(f))
 
 def get_win_streak(results):
     streak = 0
@@ -10,14 +26,14 @@ def get_win_streak(results):
             streak += 1
         else:
             break
-    return streak        
+    return streak
 
 def calculate_stats(matchups, year):
     weekly_scores = defaultdict(lambda: defaultdict(float))  # team -> week -> score
     results = defaultdict(list)  # team -> list of 'Win', 'Loss', etc.
 
     for row in matchups:
-        if row["year"] != str(year):
+        if int(row["year"]) != int(year):
             continue
         if row["team_1_result"] == "N/A":
             continue
@@ -51,6 +67,49 @@ def calculate_stats(matchups, year):
             "WinStreak": win_streak,
             **{f"Week_{w}": week_scores[w] for w in sorted(week_scores)}
         })
+
+    if not weekly_scores:
+        raise ValueError(f"No data in season yet: {year}")
     
     return stats
 
+def save_stats_csv(year):
+    if int(year) not in MAX_WEEKS_BY_YEAR:
+        raise ValueError(f"Invalid year: {year}")
+    os.makedirs(f"{STATISTICS_DIRECTORY}/{year}", exist_ok=True)
+    filename = f"{STATISTICS_DIRECTORY}/{year}/stats.csv"
+    matchups = load_matchups()
+    try:
+        stats = calculate_stats(matchups, year)
+    except ValueError:
+        if os.path.isdir(f"{STATISTICS_DIRECTORY}/{year}") and not os.listdir(f"{STATISTICS_DIRECTORY}/{year}"):
+            os.rmdir(f"{STATISTICS_DIRECTORY}/{year}")
+        raise
+
+    final_week = MAX_WEEKS_BY_YEAR[int(year)]
+    sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
+    fieldnames = ["Player", "GP", "Avg", "StDev", "WinStreak"] + sorted_weeks
+
+    with open(filename, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in stats:
+            full_row = row.copy()
+            for w in sorted_weeks:
+                if w not in full_row:
+                    full_row[w] = ""
+            writer.writerow(full_row)
+    print(f"\n{year} stats successfully updated in {filename}.")
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 -m src.generate_stats <year>")
+        sys.exit(1)
+
+    year = sys.argv[1]
+
+    try:
+        save_stats_csv(year)
+    except ValueError as e:
+        print(e)
+        sys.exit(1)

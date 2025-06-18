@@ -4,7 +4,7 @@ import sys
 from yahoo_oauth import OAuth2
 from yahoo_fantasy_api import League
 from collections import defaultdict
-from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
+from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR, MATCHUP_FILE
 from src.standings_utils import (
     win_pct,
     playoff_four_teams,
@@ -13,9 +13,7 @@ from src.standings_utils import (
     playoff_eight_teams
 )
 
-MATCHUP_FILE = "data/matchup_data.csv"
 STANDINGS_DIRECTORY = "standings"
-ALL_TIME_FILE = "standings_all_time.csv"
 
 os.makedirs(STANDINGS_DIRECTORY, exist_ok=True)
 
