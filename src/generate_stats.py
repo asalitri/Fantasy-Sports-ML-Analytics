@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 from statistics import mean, stdev
 from src.config import MAX_WEEKS_BY_YEAR, MATCHUP_FILE
+from pprint import pprint
 
 STATISTICS_DIRECTORY = "statistics"
 
@@ -55,8 +56,8 @@ def calculate_stats(matchups, year):  # list of dicts
         stats = []
         for team, week_scores in weekly_scores.items():
             scores = [week_scores[w] for w in sorted(week_scores)]
-            avg = mean(scores)
-            std = stdev(scores) if len(scores) > 1 else ""
+            avg = round(mean(scores), 2)
+            std = round(stdev(scores), 2) if len(scores) > 1 else ""
             win_streak = get_win_streak(results[team])
 
             stats.append({
@@ -92,10 +93,7 @@ def result_lookup(matchups, year):  # player -> week -> result (1 for win, 0 for
             continue
     return result_map
 
-def add_luck_index(stats, year, result_map):
-    final_week = MAX_WEEKS_BY_YEAR[int(year)]
-    sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
-
+def add_luck_index(stats, result_map, sorted_weeks):
     week_scores = defaultdict(list)
     for row in stats:
         for w in sorted_weeks:
@@ -123,6 +121,28 @@ def add_luck_index(stats, year, result_map):
 
     return stats
 
+def add_adjusted_avg(stats, sorted_weeks):
+    for row in stats:
+        scores = [row[week] for week in sorted_weeks if week in row]
+        weights = list(range(1, len(scores) + 1))
+        weighted_sum = sum(w * s for w, s in zip(weights, scores))
+        weighted_avg = weighted_sum / sum(weights)
+
+        row["AdjustedAvg"] = round(weighted_avg, 2)
+
+    return stats
+
+def add_ewma(stats, sorted_weeks, alpha=0.3):
+    for row in stats:
+        scores = [row[week] for week in sorted_weeks if week in row]
+        result = scores[0]
+        for s in scores[1:]:
+            result = alpha * s + (1 - alpha) * result
+
+        row["EWMA_Avg"] = round(result, 2)
+
+    return stats
+    
 def save_stats_csv(year):
     if int(year) not in MAX_WEEKS_BY_YEAR:
         raise ValueError(f"Invalid year: {year}")
@@ -131,17 +151,20 @@ def save_stats_csv(year):
     matchups = load_matchups()
     try:
         stats = calculate_stats(matchups, year)
+
         result_map = result_lookup(matchups, year)
-        stats = add_luck_index(stats, year, result_map)
-        
+        final_week = MAX_WEEKS_BY_YEAR[int(year)]
+        sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
+
+        stats = add_luck_index(stats, result_map, sorted_weeks)
+        stats = add_adjusted_avg(stats, sorted_weeks)
+        stats = add_ewma(stats, sorted_weeks)
     except ValueError:
         if os.path.isdir(f"{STATISTICS_DIRECTORY}/{year}") and not os.listdir(f"{STATISTICS_DIRECTORY}/{year}"):
             os.rmdir(f"{STATISTICS_DIRECTORY}/{year}")
         raise
 
-    final_week = MAX_WEEKS_BY_YEAR[int(year)]
-    sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
-    fieldnames = ["Player", "GP", "Avg", "StDev", "WinStreak", "LuckIndex"] + sorted_weeks
+    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA_Avg", "StDev", "WinStreak", "LuckIndex"] + sorted_weeks
 
     with open(filename, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
