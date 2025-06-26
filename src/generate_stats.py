@@ -132,7 +132,7 @@ def add_adjusted_avg(stats, sorted_weeks):
 
     return stats
 
-def add_ewma(stats, sorted_weeks, alpha=0.3):
+def add_ewma(stats, sorted_weeks, alpha=0.35):
     for row in stats:
         scores = [row[week] for week in sorted_weeks if week in row]
         result = scores[0]
