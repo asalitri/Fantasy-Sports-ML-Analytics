@@ -56,21 +56,21 @@ def is_complete_year(year, matchups):
 
     return bool(final_week_matchups)
 
-def calculate_standings(data):
+def calculate_standings(matchups):
     """
     Compiles win/loss records, points for/against, win percentage, games played, and games back from top ranked team.
 
     Sorts standings via win percentage and points for as tiebreaker (in decending order). 
 
     Args:
-        data (list[dict]): List of matchup records.
+        matchups (list[dict]): List of matchup records.
 
     Returns:
         list[tuple]: Sorted standings as (team_name, stats_dict).
     """
     standings = defaultdict(lambda: {"W": 0, "L": 0, "T": 0, "GP": 0, "Pct": 0.0, "PF": 0.0, "PA": 0.0})  # initializes data to zeros when new player is found, dict of dicts
 
-    for row in data:
+    for row in matchups:
         if row["team_1_result"] == "N/A" or row["team_2_result"] == "N/A":  # checks for incomplete match
             continue
         
@@ -204,16 +204,16 @@ def get_final_standings(year):
 
     return sorted_standings
 
-def save_standings(output_file, data):
+def save_standings(output_file, matchups):
     """
     Saves calculated standings to a CSV file. Only used for regular and raw standings.
 
     Args:
         output_file (str): Output CSV filepath.
-        data (list[dict]): List of matchup records.
+        matchups (list[dict]): List of matchup records.
     """
     try:
-        standings = calculate_standings(data)
+        standings = calculate_standings(matchups)
     except ValueError as e:
         raise
 

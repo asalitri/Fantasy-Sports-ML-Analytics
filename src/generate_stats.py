@@ -20,13 +20,20 @@ def load_matchups():
     with open(MATCHUP_FILE, newline="") as f:
         return list(csv.DictReader(f))
 
-def get_win_streak(results):
+def get_streak(results):
     streak = 0
     for result in reversed(results):
-        if result == "Win":
-            streak += 1
-        else:
+        if result == "Tie":
+            streak = 0
             break
+        elif result == "Win":
+            if streak < 0:
+                break
+            streak += 1
+        elif result == "Loss":
+            if streak > 0:
+                break
+            streak -= 1
     return streak
 
 def calculate_stats(matchups, year):  # list of dicts
@@ -58,14 +65,14 @@ def calculate_stats(matchups, year):  # list of dicts
             scores = [week_scores[w] for w in sorted(week_scores)]
             avg = round(mean(scores), 2)
             std = round(stdev(scores), 2) if len(scores) > 1 else ""
-            win_streak = get_win_streak(results[team])
+            streak = get_streak(results[team])
 
             stats.append({
             "Player": team,
             "GP": len(scores),
             "Avg": avg,
             "StDev": std,
-            "WinStreak": win_streak,
+            "Streak": streak,
             **{f"Week_{w}": week_scores[w] for w in sorted(week_scores)}
         })
 
@@ -164,7 +171,7 @@ def save_stats_csv(year):
             os.rmdir(f"{STATISTICS_DIRECTORY}/{year}")
         raise
 
-    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA_Avg", "StDev", "WinStreak", "LuckIndex"] + sorted_weeks
+    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA_Avg", "StDev", "Streak", "LuckIndex"] + sorted_weeks
 
     with open(filename, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
