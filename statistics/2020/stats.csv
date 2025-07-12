@@ -1,4 +1,4 @@
-Player,GP,Avg,AdjustedAvg,EWMA_Avg,StDev,Streak,LuckIndex,Week_1,Week_2,Week_3,Week_4,Week_5,Week_6,Week_7,Week_8,Week_9,Week_10,Week_11,Week_12,Week_13,Week_14,Week_15,Week_16
+Player,GP,Avg,AdjustedAvg,EWMA,StDev,Streak,LuckIndex,Week_1,Week_2,Week_3,Week_4,Week_5,Week_6,Week_7,Week_8,Week_9,Week_10,Week_11,Week_12,Week_13,Week_14,Week_15,Week_16
 Abhi,16,146.0,146.75,153.66,21.05,3,0.44,141.0,128.0,152.0,176.0,154.0,132.0,169.0,116.0,126.0,154.0,158.0,149.0,98.0,159.0,156.0,168.0
 Weston,16,148.38,148.51,156.14,21.13,1,-2.64,138.0,168.0,175.0,141.0,135.0,173.0,118.0,131.0,177.0,112.0,125.0,155.0,155.0,154.0,144.0,173.0
 Ben,16,129.44,127.6,117.09,33.71,-2,1.99,113.0,153.0,116.0,176.0,126.0,64.0,158.0,117.0,169.0,122.0,134.0,136.0,127.0,182.0,68.0,110.0

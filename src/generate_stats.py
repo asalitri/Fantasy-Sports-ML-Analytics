@@ -146,7 +146,7 @@ def add_ewma(stats, sorted_weeks, alpha=0.35):
         for s in scores[1:]:
             result = alpha * s + (1 - alpha) * result
 
-        row["EWMA_Avg"] = round(result, 2)
+        row["EWMA"] = round(result, 2)
 
     return stats
     
@@ -171,7 +171,7 @@ def save_stats_csv(year):
             os.rmdir(f"{STATISTICS_DIRECTORY}/{year}")
         raise
 
-    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA_Avg", "StDev", "Streak", "LuckIndex"] + sorted_weeks
+    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA", "StDev", "Streak", "LuckIndex"] + sorted_weeks
 
     with open(filename, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

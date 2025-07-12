@@ -1,4 +1,4 @@
-Player,GP,Avg,AdjustedAvg,EWMA_Avg,StDev,Streak,LuckIndex,Week_1,Week_2,Week_3,Week_4,Week_5,Week_6,Week_7,Week_8,Week_9,Week_10,Week_11,Week_12,Week_13,Week_14,Week_15,Week_16
+Player,GP,Avg,AdjustedAvg,EWMA,StDev,Streak,LuckIndex,Week_1,Week_2,Week_3,Week_4,Week_5,Week_6,Week_7,Week_8,Week_9,Week_10,Week_11,Week_12,Week_13,Week_14,Week_15,Week_16
 Abhi,16,153.38,144.59,131.36,29.98,-3,-0.65,174.0,131.0,193.0,193.0,146.0,177.0,162.0,211.0,155.0,140.0,107.0,122.0,149.0,133.0,148.0,113.0
 Cody,16,144.44,147.7,157.36,33.46,1,-0.1,88.0,135.0,176.0,102.0,173.0,162.0,140.0,190.0,149.0,150.0,151.0,85.0,150.0,115.0,146.0,199.0
 Harrison,16,125.06,116.0,111.04,33.68,-2,1.47,180.0,117.0,199.0,94.0,186.0,111.0,115.0,98.0,137.0,114.0,95.0,97.0,111.0,128.0,117.0,102.0
