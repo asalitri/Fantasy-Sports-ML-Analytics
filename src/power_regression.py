@@ -1,10 +1,10 @@
 import csv
 import os
 from src.config import MATCHUP_FILE
-from src.generate_stats import calculate_stats
+from src.generate_stats import calculate_stats, add_ewma
 from src.generate_standings import calculate_standings
 from src.power_utils import scaled_metric
-from src.config import LEAGUE_IDS
+from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error
 import math
@@ -24,7 +24,8 @@ def extract_features_and_target(matchups, year, week):
     matchups_up_to_week = [m for m in matchups if m["year"] == str(year) and int(m["week"]) <= week]
     reg_season_matchups = [m for m in matchups if m["year"] == str(year) and m["is_playoff"] == "False"]
 
-    current_stats = calculate_stats(matchups_up_to_week, year)
+    current_stats_pre_ewma = calculate_stats(matchups_up_to_week, year)
+    current_stats = add_ewma(year, current_stats_pre_ewma)
     current_standings = calculate_standings(matchups_up_to_week)
     final_reg_standings = calculate_standings(reg_season_matchups)
 

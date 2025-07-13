@@ -66,12 +66,16 @@ def calculate_stats(matchups, year):  # list of dicts
             avg = round(mean(scores), 2)
             std = round(stdev(scores), 2) if len(scores) > 1 else ""
             streak = get_streak(results[team])
+            high = max(scores)
+            low = min(scores)
 
             stats.append({
             "Player": team,
             "GP": len(scores),
             "Avg": avg,
             "StDev": std,
+            "High": high,
+            "Low": low,
             "Streak": streak,
             **{f"Week_{w}": week_scores[w] for w in sorted(week_scores)}
         })
@@ -100,8 +104,11 @@ def result_lookup(matchups, year):  # player -> week -> result (1 for win, 0 for
             continue
     return result_map
 
-def add_luck_index(stats, result_map, sorted_weeks):
+def add_luck_index(year, stats, result_map):
+    final_week = MAX_WEEKS_BY_YEAR[int(year)]
+    sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
     week_scores = defaultdict(list)
+
     for row in stats:
         for w in sorted_weeks:
             if w in row and row[w] != "":
@@ -128,7 +135,10 @@ def add_luck_index(stats, result_map, sorted_weeks):
 
     return stats
 
-def add_adjusted_avg(stats, sorted_weeks):
+def add_adjusted_avg(year, stats):
+    final_week = MAX_WEEKS_BY_YEAR[int(year)]
+    sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
+
     for row in stats:
         scores = [row[week] for week in sorted_weeks if week in row]
         weights = list(range(1, len(scores) + 1))
@@ -139,7 +149,10 @@ def add_adjusted_avg(stats, sorted_weeks):
 
     return stats
 
-def add_ewma(stats, sorted_weeks, alpha=0.35):
+def add_ewma(year, stats, alpha=0.35):
+    final_week = MAX_WEEKS_BY_YEAR[int(year)]
+    sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
+
     for row in stats:
         scores = [row[week] for week in sorted_weeks if week in row]
         result = scores[0]
@@ -163,15 +176,15 @@ def save_stats_csv(year):
         final_week = MAX_WEEKS_BY_YEAR[int(year)]
         sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
 
-        stats = add_luck_index(stats, result_map, sorted_weeks)
-        stats = add_adjusted_avg(stats, sorted_weeks)
-        stats = add_ewma(stats, sorted_weeks)
+        stats = add_luck_index(year, stats, result_map)
+        stats = add_adjusted_avg(year, stats)
+        stats = add_ewma(year, stats)
     except ValueError:
         if os.path.isdir(f"{STATISTICS_DIRECTORY}/{year}") and not os.listdir(f"{STATISTICS_DIRECTORY}/{year}"):
             os.rmdir(f"{STATISTICS_DIRECTORY}/{year}")
         raise
 
-    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA", "StDev", "Streak", "LuckIndex"] + sorted_weeks
+    fieldnames = ["Player", "GP", "Avg", "AdjustedAvg", "EWMA", "StDev", "High", "Low", "Streak", "LuckIndex"] + sorted_weeks
 
     with open(filename, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
