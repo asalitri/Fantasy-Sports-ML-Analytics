@@ -104,7 +104,8 @@ def result_lookup(matchups, year):  # player -> week -> result (1 for win, 0 for
             continue
     return result_map
 
-def add_luck_index(year, stats, result_map):
+def add_luck_index(year, stats, matchups):
+    result_map = result_lookup(matchups, year)
     final_week = MAX_WEEKS_BY_YEAR[int(year)]
     sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
     week_scores = defaultdict(list)
@@ -172,11 +173,10 @@ def save_stats_csv(year):
     try:
         stats = calculate_stats(matchups, year)
 
-        result_map = result_lookup(matchups, year)
         final_week = MAX_WEEKS_BY_YEAR[int(year)]
         sorted_weeks = [f"Week_{i}" for i in range(1, final_week + 1)]
 
-        stats = add_luck_index(year, stats, result_map)
+        stats = add_luck_index(year, stats, matchups)
         stats = add_adjusted_avg(year, stats)
         stats = add_ewma(year, stats)
     except ValueError:
