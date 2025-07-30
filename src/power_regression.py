@@ -55,6 +55,8 @@ def extract_features_and_target(matchups, year, week):
     adj_deltas = []
     pf_deltas = []
     range_deltas = []
+    range_deltas_2 = []  # range_deltas squared
+    interaction_1_list = []  # pf_deltas * range_deltas
     future_wins_target = []
 
     rows = []
@@ -77,6 +79,8 @@ def extract_features_and_target(matchups, year, week):
             adj_delta = adj_avg - avg
             pf_delta = pf - pa
             range_delta = high - low
+            range_delta_2 = range_delta ** 2
+            interaction_1 = pf_delta * range_delta
 
             win_pcts.append(win_pct)
             ewmas.append(ewma)
@@ -94,6 +98,8 @@ def extract_features_and_target(matchups, year, week):
             adj_deltas.append(adj_delta)
             pf_deltas.append(pf_delta)
             range_deltas.append(range_delta)
+            range_deltas_2.append(range_delta_2)
+            interaction_1_list.append(interaction_1)
 
             future_wins = final_wins[player] - current_wins[player]
             future_wins_target.append(future_wins)
@@ -114,6 +120,8 @@ def extract_features_and_target(matchups, year, week):
     scaled_adj_deltas = scaled_metric(adj_deltas)
     scaled_pf_deltas = scaled_metric(pf_deltas)
     scaled_range_deltas = scaled_metric(range_deltas)
+    scaled_range_deltas_2 = scaled_metric(range_deltas_2)
+    scaled_interaction_1_list = scaled_metric(interaction_1_list)
 
     return {
         "ewma": scaled_ewmas,
@@ -131,6 +139,8 @@ def extract_features_and_target(matchups, year, week):
         "adj_delta": scaled_adj_deltas,
         "pf_delta": scaled_pf_deltas,
         "range_delta": scaled_range_deltas,
+        "range_delta_2": scaled_range_deltas_2,
+        "interaction_1": scaled_interaction_1_list,
         "target": future_wins_target
     }
 
@@ -151,6 +161,8 @@ def aggregate_features_and_targets(matchups, week, years):
     all_scaled_adj_deltas = []
     all_scaled_pf_deltas = []
     all_scaled_range_deltas = []
+    all_scaled_range_deltas_2 = []
+    all_scaled_interaction_1_list = []
 
     all_targets = []
 
@@ -173,6 +185,8 @@ def aggregate_features_and_targets(matchups, week, years):
         all_scaled_adj_deltas.extend(result["adj_delta"])
         all_scaled_pf_deltas.extend(result["pf_delta"])
         all_scaled_range_deltas.extend(result["range_delta"])
+        all_scaled_range_deltas_2.extend(result["range_delta_2"])
+        all_scaled_interaction_1_list.extend(result["interaction_1"])
 
         all_targets.extend(result["target"])
 
@@ -184,11 +198,11 @@ def aggregate_features_and_targets(matchups, week, years):
     X = []
     for i in range(len(all_targets)):
         features = [
-            all_scaled_ewmas[i],
-            all_scaled_stdevs[i],
-            all_scaled_win_pcts[i],
-            all_scaled_streaks[i],
-            all_scaled_adj_avgs[i],
+            # all_scaled_ewmas[i],
+            # all_scaled_stdevs[i],
+            # all_scaled_win_pcts[i],
+            # all_scaled_streaks[i],
+            # all_scaled_adj_avgs[i],
             all_scaled_avgs[i],
             all_scaled_pfs[i],
             all_scaled_pas[i],
@@ -198,7 +212,9 @@ def aggregate_features_and_targets(matchups, week, years):
             all_scaled_ewma_deltas[i],
             all_scaled_adj_deltas[i],
             all_scaled_pf_deltas[i],
-            all_scaled_range_deltas[i]
+            all_scaled_range_deltas[i],
+            # all_scaled_range_deltas_2[i],
+            all_scaled_interaction_1_list[i]
         ]
         X.append(features)
 
@@ -301,6 +317,7 @@ def cross_validation_linear_regression(matchups, week, years):
 def xgb_regression(matchups, week, years):
     r2_scores = []
     rmses = []
+    feature_importances = []
 
     for test_year in years:
         train_years = [y for y in years if y != test_year]
@@ -320,11 +337,16 @@ def xgb_regression(matchups, week, years):
         r2_scores.append(r2_score(y_test, y_pred))
         rmses.append(np.sqrt(mean_squared_error(y_test, y_pred)))
 
+        feature_importances.append(model.feature_importances_)
+
+    avg_feature_importance = np.mean(feature_importances, axis=0).tolist()
+
     return {
         "avg_r2": np.mean(r2_scores),
         "avg_rmse": np.mean(rmses),
         "r2_scores": r2_scores,
-        "rmses": rmses
+        "rmses": rmses,
+        "avg_feature_importance": avg_feature_importance
     }
 
 def main():
@@ -333,7 +355,7 @@ def main():
     for week in range(3, 12):  # Example range
         # X, y = aggregate_features_and_targets(matchups, week)
         # result = run_linear_regression(X, y)
-        result = cross_validation_forest_regression(matchups, week, list(LEAGUE_IDS)[:-1])
+        result = xgb_regression(matchups, week, list(LEAGUE_IDS)[:-1])
 
         print(f"Week {week}")
         # print("  Test Year:", result["test_year"])
@@ -347,7 +369,7 @@ def main():
             print("  Feature Importances:")
             for idx, importance in enumerate(result["avg_feature_importance"]):
                 print(f"    Feature {idx}: {importance:.4f}")
-                
+
         print()
 
 if __name__ == "__main__":
