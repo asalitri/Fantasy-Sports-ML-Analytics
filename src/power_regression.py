@@ -12,6 +12,7 @@ from xgboost import XGBRegressor
 import math
 import random
 import numpy as np
+import pandas as pd
 
 
 def load_matchups():
@@ -40,187 +41,67 @@ def extract_features_and_target(matchups, year, week):
     current_wins = {row[0]: int(row[1]["W"]) for row in current_standings}
     final_wins = {row[0]: int(row[1]["W"]) for row in final_reg_standings}
 
-    win_pcts = []
-    ewmas = []
-    stdevs = []
-    streaks = []
-    adj_avgs = []
-    avgs = []
-    pfs = []
-    pas = []
-    highs = []
-    lows = []
-    luck_indexes = []
-    ewma_deltas = []
-    adj_deltas = []
-    pf_deltas = []
-    range_deltas = []
-    range_deltas_2 = []  # range_deltas squared
-    interaction_1_list = []  # pf_deltas * range_deltas
-    future_wins_target = []
-
     rows = []
     for stats_row, standings_row in zip(current_stats, current_standings):
         player = stats_row["Player"]
         try:
-            win_pct = float(standings_row[1]["Pct"])
-            ewma = float(stats_row["EWMA"])
-            stdev = float(stats_row["StDev"])
-            win_streak = float(stats_row["Streak"])
-            
-            adj_avg = float(stats_row["AdjustedAvg"])
-            avg = float(stats_row["Avg"])
-            pf = float(standings_row[1]["PF"])
-            pa = float(standings_row[1]["PA"])
-            high = float(stats_row["High"])
-            low = float(stats_row["Low"])
-            luck_index = float(stats_row["LuckIndex"])
-            ewma_delta = ewma - avg
-            adj_delta = adj_avg - avg
-            pf_delta = pf - pa
-            range_delta = high - low
-            range_delta_2 = range_delta ** 2
-            interaction_1 = pf_delta * range_delta
-
-            win_pcts.append(win_pct)
-            ewmas.append(ewma)
-            stdevs.append(stdev)
-            streaks.append(win_streak)
-
-            adj_avgs.append(adj_avg)
-            avgs.append(avg)
-            pfs.append(pf)
-            pas.append(pa)
-            highs.append(high)
-            lows.append(low)
-            luck_indexes.append(luck_index)
-            ewma_deltas.append(ewma_delta)
-            adj_deltas.append(adj_delta)
-            pf_deltas.append(pf_delta)
-            range_deltas.append(range_delta)
-            range_deltas_2.append(range_delta_2)
-            interaction_1_list.append(interaction_1)
-
-            future_wins = final_wins[player] - current_wins[player]
-            future_wins_target.append(future_wins)
+            row = {
+                "player": player,
+                "ewma": float(stats_row["EWMA"]),
+                "stdev": float(stats_row["StDev"]),
+                "win_pct": float(standings_row[1]["Pct"]),
+                "streak": float(stats_row["Streak"]),
+                "adj_avg": float(stats_row["AdjustedAvg"]),
+                "avg": float(stats_row["Avg"]),
+                "pf": float(standings_row[1]["PF"]),
+                "pa": float(standings_row[1]["PA"]),
+                "high": float(stats_row["High"]),
+                "low": float(stats_row["Low"]),
+                "luck_index": float(stats_row["LuckIndex"])
+            }
+            row["target"] = final_wins[player] - current_wins[player]
+            rows.append(row)
         except ValueError:
             continue
 
-    # local scaling
-    scaled_ewmas = scaled_metric(ewmas)
-    scaled_stdevs = scaled_metric(stdevs)
+    df = pd.DataFrame(rows)
 
-    scaled_adj_avgs = scaled_metric(adj_avgs)
-    scaled_avgs = scaled_metric(avgs)
-    scaled_pfs = scaled_metric(pfs)
-    scaled_pas = scaled_metric(pas)
-    scaled_highs = scaled_metric(highs)
-    scaled_lows = scaled_metric(lows)
-    scaled_ewma_deltas = scaled_metric(ewma_deltas)
-    scaled_adj_deltas = scaled_metric(adj_deltas)
-    scaled_pf_deltas = scaled_metric(pf_deltas)
-    scaled_range_deltas = scaled_metric(range_deltas)
-    scaled_range_deltas_2 = scaled_metric(range_deltas_2)
-    scaled_interaction_1_list = scaled_metric(interaction_1_list)
+    # Derived features
+    df["ewma_avg_delta"] = df["ewma"] - df["avg"]
+    df["adj_avg_delta"] = df["adj_avg"] - df["avg"]
+    df["pf_pa_delta"] = df["pf"] - df["pa"]
+    df["range"] = df["high"] - df["low"]
+    df["interaction_1"] = df["pf_pa_delta"] * df["range"]
+    df["range_squared"] = df["range"] ** 2
 
-    return {
-        "ewma": scaled_ewmas,
-        "stdev": scaled_stdevs,
-        "win_pct": win_pcts,  # unscaled
-        "streak": streaks,  # unscaled
-        "adj_avg": scaled_adj_avgs,
-        "avg": scaled_avgs,
-        "pf": scaled_pfs,
-        "pa": scaled_pas,
-        "high": scaled_highs,
-        "low": scaled_lows,
-        "luck_index": luck_indexes,
-        "ewma_delta": scaled_ewma_deltas,
-        "adj_delta": scaled_adj_deltas,
-        "pf_delta": scaled_pf_deltas,
-        "range_delta": scaled_range_deltas,
-        "range_delta_2": scaled_range_deltas_2,
-        "interaction_1": scaled_interaction_1_list,
-        "target": future_wins_target
-    }
+    # Local scaling
+    scale_cols = [
+        "ewma", "stdev", "adj_avg", "avg", "pf", "pa", "high", "low",
+        "ewma_avg_delta", "adj_avg_delta", "pf_pa_delta", "range",
+        "interaction_1", "range_squared"
+    ]
+    for col in scale_cols:
+        df[col] = scaled_metric(df[col])
+
+    return df
 
 def aggregate_features_and_targets(matchups, week, years):
-    all_scaled_ewmas = []
-    all_scaled_stdevs = []
-    all_win_pcts = []
-    all_streaks = []
+    all_dfs = [extract_features_and_target(matchups, year, week) for year in years]  # list of all dfs
+    df = pd.concat(all_dfs, ignore_index=True)  # merges into one df
 
-    all_scaled_adj_avgs = []
-    all_scaled_avgs = []
-    all_scaled_pfs = []
-    all_scaled_pas = []
-    all_scaled_highs = []
-    all_scaled_lows = []
-    all_luck_indexes = []
-    all_scaled_ewma_deltas = []
-    all_scaled_adj_deltas = []
-    all_scaled_pf_deltas = []
-    all_scaled_range_deltas = []
-    all_scaled_range_deltas_2 = []
-    all_scaled_interaction_1_list = []
+    # Global scaling
+    df["win_pct"] = scaled_metric(df["win_pct"])
+    df["streak"] = scaled_metric(df["streak"])
+    df["luck_index"] = scaled_metric(df["luck_index"])
 
-    all_targets = []
+    # keep player names and target out, removes bad features
+    #  "ewma", "stdev", "win_pct", "streak", "adj_avg", "range_squared"
+    feature_names = df.drop(columns=["player", "target", "interaction_1", "range_squared"]).columns.tolist()
 
-    for year in years:  # loops thru completed years
-        result = extract_features_and_target(matchups, year, week)
+    X = df[feature_names].values
+    y = df["target"].values
 
-        all_scaled_ewmas.extend(result["ewma"])
-        all_scaled_stdevs.extend(result["stdev"])
-        all_win_pcts.extend(result["win_pct"])
-        all_streaks.extend(result["streak"])
-
-        all_scaled_adj_avgs.extend(result["adj_avg"])
-        all_scaled_avgs.extend(result["avg"])
-        all_scaled_pfs.extend(result["pf"])
-        all_scaled_pas.extend(result["pa"])
-        all_scaled_highs.extend(result["high"])
-        all_scaled_lows.extend(result["low"])
-        all_luck_indexes.extend(result["luck_index"])
-        all_scaled_ewma_deltas.extend(result["ewma_delta"])
-        all_scaled_adj_deltas.extend(result["adj_delta"])
-        all_scaled_pf_deltas.extend(result["pf_delta"])
-        all_scaled_range_deltas.extend(result["range_delta"])
-        all_scaled_range_deltas_2.extend(result["range_delta_2"])
-        all_scaled_interaction_1_list.extend(result["interaction_1"])
-
-        all_targets.extend(result["target"])
-
-    # global scaling
-    all_scaled_win_pcts = scaled_metric(all_win_pcts)
-    all_scaled_streaks = scaled_metric(all_streaks)
-    all_scaled_luck_indexes = scaled_metric(all_luck_indexes)
-
-    X = []
-    for i in range(len(all_targets)):
-        features = [
-            # all_scaled_ewmas[i],
-            # all_scaled_stdevs[i],
-            # all_scaled_win_pcts[i],
-            # all_scaled_streaks[i],
-            # all_scaled_adj_avgs[i],
-            all_scaled_avgs[i],
-            all_scaled_pfs[i],
-            all_scaled_pas[i],
-            all_scaled_highs[i],
-            all_scaled_lows[i],
-            all_scaled_luck_indexes[i],
-            all_scaled_ewma_deltas[i],
-            all_scaled_adj_deltas[i],
-            all_scaled_pf_deltas[i],
-            all_scaled_range_deltas[i],
-            # all_scaled_range_deltas_2[i],
-            all_scaled_interaction_1_list[i]
-        ]
-        X.append(features)
-
-    y = all_targets
-
-    return X, y
+    return X, y, feature_names
 
 def run_forest_regression(matchups, week):
     test_year = random.choice(list(LEAGUE_IDS)[:-1])
@@ -319,11 +200,13 @@ def xgb_regression(matchups, week, years):
     rmses = []
     feature_importances = []
 
+    _, _, feature_names = aggregate_features_and_targets(matchups, week, [years[0]])
+
     for test_year in years:
         train_years = [y for y in years if y != test_year]
 
-        X_train, y_train = aggregate_features_and_targets(matchups, week, train_years)
-        X_test, y_test = aggregate_features_and_targets(matchups, week, [test_year])
+        X_train, y_train, _ = aggregate_features_and_targets(matchups, week, train_years)
+        X_test, y_test , _ = aggregate_features_and_targets(matchups, week, [test_year])
 
         model = XGBRegressor(
             n_estimators=100,
@@ -346,7 +229,8 @@ def xgb_regression(matchups, week, years):
         "avg_rmse": np.mean(rmses),
         "r2_scores": r2_scores,
         "rmses": rmses,
-        "avg_feature_importance": avg_feature_importance
+        "avg_feature_importance": avg_feature_importance,
+        "feature_names": feature_names
     }
 
 def main():
@@ -367,8 +251,8 @@ def main():
 
         if "avg_feature_importance" in result:
             print("  Feature Importances:")
-            for idx, importance in enumerate(result["avg_feature_importance"]):
-                print(f"    Feature {idx}: {importance:.4f}")
+            for name, importance in zip(result["feature_names"], result["avg_feature_importance"]):
+                print(f"    {name}: {importance:.4f}")
 
         print()
 
