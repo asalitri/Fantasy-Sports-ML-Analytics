@@ -7,6 +7,7 @@ from src.power_utils import scaled_metric
 from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import RandomizedSearchCV, GroupKFold
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.inspection import permutation_importance
 from xgboost import XGBRegressor
@@ -14,6 +15,10 @@ import math
 import random
 import numpy as np
 import pandas as pd
+
+SELECTED_FEATURES_BY_WEEK = {
+    3: ["stdev", "win_pct", "avg", "pa", "adj_avg_delta", "avg * pa", "avg * win_pct", "adj_avg_delta * pa"]
+}
 
 
 def load_matchups():
@@ -47,6 +52,7 @@ def extract_features_and_target(matchups, year, week):
         player = stats_row["Player"]
         try:
             row = {
+                "year": year,
                 "player": player,
                 "ewma": float(stats_row["EWMA"]),
                 "stdev": float(stats_row["StDev"]),
@@ -72,15 +78,23 @@ def extract_features_and_target(matchups, year, week):
     df["adj_avg_delta"] = df["adj_avg"] - df["avg"]
     df["pf_pa_delta"] = df["pf"] - df["pa"]
     df["range"] = df["high"] - df["low"]
-    df["avg * pa"] = df["avg"] * df["pa"]
-    df["avg * win_pct"] = df["avg"] * df["win_pct"]
-    df["adj_avg_delta * pa"] = df["adj_avg_delta"] * df["pa"]
+    
+    df["avg * pa"] = df["avg"] * df["pa"]  # Week 3
+    df["avg * win_pct"] = df["avg"] * df["win_pct"]  # Week 3
+    df["adj_avg_delta * pa"] = df["adj_avg_delta"] * df["pa"]  # Week 3
+
+    df["pf_pa_delta * adj_avg"] = df["pf_pa_delta"] * df["adj_avg"]  # Week 4
+    df["pf_pa_delta * stdev"] = df["pf_pa_delta"] * df["stdev"]  # Week 4
+    df["pf_pa_delta * streak"] = df["pf_pa_delta"] * df["streak"]  # Week 4
+    df["adj_avg * adj_avg_delta"] = df["adj_avg"] * df["adj_avg_delta"]  # Week 4
 
     # Local scaling
     scale_cols = [
         "ewma", "stdev", "adj_avg", "avg", "pf", "pa", "high", "low",
         "ewma_avg_delta", "adj_avg_delta", "pf_pa_delta", "range",
-        "avg * pa", "avg * win_pct", "adj_avg_delta * pa"
+        "avg * pa", "avg * win_pct", "adj_avg_delta * pa",
+        "pf_pa_delta * adj_avg", "pf_pa_delta * stdev", "pf_pa_delta * streak",
+        "adj_avg * adj_avg_delta"
     ]
     for col in scale_cols:
         df[col] = scaled_metric(df[col])
@@ -97,16 +111,17 @@ def aggregate_features_and_targets(matchups, week, years):
     df["luck_index"] = scaled_metric(df["luck_index"])
 
 
-    # keep player names and target out, removes bad features
-    #  "ewma", "stdev", "win_pct", "streak", "adj_avg", "range_squared"
+    # keeps year, player names, and target out; removes bad features
     feature_names = df.drop(
-        columns=["player", "target", "pf", "high", "adj_avg", "ewma", "streak", "ewma_avg_delta", "pf_pa_delta", "low"]
+        columns=["year", "player", "target", "avg * pa", "avg * win_pct", "adj_avg_delta * pa",
+        "luck_index", "avg", "ewma", "pf", "high", "low", "pa", "win_pct", "range", "adj_avg * adj_avg_delta", "pf_pa_delta * streak"]
         ).columns.tolist()
 
     X = df[feature_names].values
     y = df["target"].values
+    groups = df["year"].values
 
-    return X, y, feature_names
+    return X, y, feature_names, groups
 
 def run_linear_regression(X, y):
     model = LinearRegression()
@@ -170,13 +185,38 @@ def run_forest_regression(matchups, week):
         "test_year": test_year  # Might be useful to know which year was used for testing
     }
 
+def get_best_random_forest(X_train, y_train, groups_train):
+    param_grid = {
+        "n_estimators": [100, 200, 300],
+        "max_depth": [None, 5, 10, 20],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "max_features": ["sqrt", "log2", None],
+        "bootstrap": [True, False],
+    }
+
+    model = RandomForestRegressor(random_state=42)
+    search = RandomizedSearchCV(
+        estimator=model,
+        param_distributions=param_grid,
+        n_iter=50,
+        cv=GroupKFold(n_splits=5),
+        scoring="neg_root_mean_squared_error",
+        random_state=42,
+        n_jobs=-1,
+        verbose=1
+    )
+    
+    search.fit(X_train, y_train, groups=groups_train)
+    return search.best_estimator_
+
 def cross_validation_forest_regression(matchups, week, years, selected_features=None):
     r2_scores = []
     rmses = []
     feature_importances = []
     permutation_importances = []
 
-    _, _, feature_names = aggregate_features_and_targets(matchups, week, [years[0]])
+    _, _, feature_names, _ = aggregate_features_and_targets(matchups, week, [years[0]])
 
     # If features are specified, gets feature indices
     if selected_features is not None:
@@ -187,14 +227,16 @@ def cross_validation_forest_regression(matchups, week, years, selected_features=
     for test_year in years:
         train_years = [y for y in years if y != test_year]
 
-        X_train, y_train, _ = aggregate_features_and_targets(matchups, week, train_years)
-        X_test, y_test, _ = aggregate_features_and_targets(matchups, week, [test_year])
+        X_train, y_train, _, groups_train = aggregate_features_and_targets(matchups, week, train_years)
+        X_test, y_test, _, _ = aggregate_features_and_targets(matchups, week, [test_year])
 
         # Applies selected features
         X_train = X_train[:, selected_indices]
         X_test = X_test[:, selected_indices]
 
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        # testing use: RandomForestRegressor(n_estimators=100, random_state=42)
+        # hyperparameter use: get_best_random_forest(X_train, y_train, groups_train)
+        model = get_best_random_forest(X_train, y_train, groups_train)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
@@ -223,20 +265,20 @@ def xgb_regression(matchups, week, years):
     rmses = []
     feature_importances = []
 
-    _, _, feature_names = aggregate_features_and_targets(matchups, week, [years[0]])
+    _, _, feature_names, _ = aggregate_features_and_targets(matchups, week, [years[0]])
 
     for test_year in years:
         train_years = [y for y in years if y != test_year]
 
-        X_train, y_train, _ = aggregate_features_and_targets(matchups, week, train_years)
-        X_test, y_test , _ = aggregate_features_and_targets(matchups, week, [test_year])
+        X_train, y_train, _, groups_train = aggregate_features_and_targets(matchups, week, train_years)
+        X_test, y_test , _, _ = aggregate_features_and_targets(matchups, week, [test_year])
 
         model = XGBRegressor(
             n_estimators=100,
-            learning_rate=0.05,      # Lower to make it more conservative
-            max_depth=3,             # Shallower trees help avoid memorizing noise
-            reg_alpha=1.0,           # L1 regularization (feature selection)
-            reg_lambda=1.0,          # L2 regularization (shrinkage)
+            learning_rate=0.05,      
+            max_depth=3,             
+            reg_alpha=1.0,  # L1
+            reg_lambda=1.0,  # L2
             random_state=42
         )
         model.fit(X_train, y_train)
@@ -261,7 +303,7 @@ def xgb_regression(matchups, week, years):
 def main():
     matchups = load_matchups()
 
-    for week in range(3, 4):
+    for week in range(4, 5):
         # X, y = aggregate_features_and_targets(matchups, week)
         # result = run_linear_regression(X, y)
         result = cross_validation_forest_regression(matchups, week, list(LEAGUE_IDS)[:-1])
