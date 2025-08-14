@@ -10,8 +10,6 @@ This project automates the collection, processing, analysis, and predictive mode
 - Supports dynamic playoff ranking logic across various bracket sizes
 - Delivers machine learning power ratings and predictions for remaining wins using feature engineering, Random Forest regression, and permutation importance analysis
 
-This README consolidates all components into a single reference for contributors, maintainers, and evaluators.
-
 ## Key Features
 
 - **End-to-End Data Pipeline** — From raw Yahoo API calls to structured CSVs and analytics outputs
