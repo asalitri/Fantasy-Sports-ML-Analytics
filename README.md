@@ -48,8 +48,8 @@ This README consolidates all components into a single reference for contributors
 
 ### Clone Repository
 ``` bash
-git clone https://github.com/yourusername/fantasy-football-analytics.git
-cd fantasy-football-analytics
+git clone https://github.com/yourusername/Fantasy-Sports-ML-Analytics.git
+cd Fantasy-Sports-ML-Analytics
 ```
 
 ### Install Requirements
