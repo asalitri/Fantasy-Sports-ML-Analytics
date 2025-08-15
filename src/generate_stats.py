@@ -4,7 +4,6 @@ import os
 from collections import defaultdict
 from statistics import mean, stdev
 from src.config import MAX_WEEKS_BY_YEAR, MATCHUP_FILE
-from pprint import pprint
 
 STATISTICS_DIRECTORY = "statistics"
 
