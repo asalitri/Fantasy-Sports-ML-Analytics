@@ -1,5 +1,18 @@
 # Fantasy Sports Machine Learning Analytics
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Technologies Used](#technologies-used)
+- [Installation & Setup](#installation--setup)
+- [Project Structure](#project-structure)
+- [Data Pipeline](#data-pipeline)
+- [Example Workflow](#example-workflow)
+- [What I Learned](#what-i-learned)
+- [Overall Impact](#overall-impact)
+- [Contact](#contact)
+
 ## Overview
 
 This project automates the collection, processing, analysis, and predictive modeling of fantasy football league data from Yahoo Fantasy Sports across multiple seasons (2017–2025). It integrates data engineering, custom analytics, and machine learning to build a reproducible, extensible pipeline that:
@@ -87,6 +100,7 @@ Add or update league IDs as needed.
 ``` bash
 src/
   authenticate.py         # Initializes and refreshes OAuth2 tokens for Yahoo API access
+  authenticate.py         # Initializes and refreshes OAuth2 tokens for Yahoo API access
   utils.py                # League/owner metadata automation
   matchup_utils.py        # Name normalization, result determination, data extraction
   collect_matchups.py     # Full-season matchup collection
@@ -95,6 +109,7 @@ src/
   generate_standings.py   # Season/all-time standings generation
   generate_stats.py       # Core & advanced statistics (LuckIndex, EWMA, etc.)
   regression_utils.py     # Scaling and regression helpers
+  ml_plots.py             # Functions to visualize regression modeling output
   ml_plots.py             # Functions to visualize regression modeling output
   ml_regression.py        # Predictive modeling pipeline
 data/
@@ -108,6 +123,12 @@ standings/                # Standings directory
 statistics/               # Statistics directory
   <year>/                 # One folder per season
     stats.csv
+regression/               # Predictive modeling results/visualizations
+  regression_results.csv  # Regression model results
+  figures/                # Regression model visualizations
+    <figures>
+.gitignore                # Lists files/folders Git should ignore
+requirements.txt          # Lists Python packages and versions needed to run the project
 regression/               # Predictive modeling results/visualizations
   regression_results.csv  # Regression model results
   figures/                # Regression model visualizations
@@ -231,6 +252,7 @@ Building this project required working across the full data engineering and data
 ### API Integration & Automation
 - Learned how to work with OAuth2 authentication and the Yahoo Fantasy Sports API, including edge-case handling for historical season data.
 - Gained experience in structuring reusable, modular scripts to make API workflows repeatable and easy to maintain.
+- Gained experience in structuring reusable, modular scripts to make API workflows repeatable and easy to maintain.
 
 ### Data Cleaning & Normalization at Scale
 - Developed practical strategies for resolving entity resolution issues (e.g., team/owner name changes, missing GUIDs).
@@ -239,6 +261,7 @@ Building this project required working across the full data engineering and data
 ### Feature Engineering & Advanced Metrics
 - Deepened understanding of designing domain-specific sports metrics like LuckIndex, weighted averages, volatility measures, and exponentially weighted moving averages (EWMA).
 - Learned to combine domain knowledge with statistical principles to improve predictive features.
+- Developed strategies to identify and remove uninformative/misleading features, and experimented with feature interactions to enhance model performance.
 - Developed strategies to identify and remove uninformative/misleading features, and experimented with feature interactions to enhance model performance.
 
 ### Predictive Modeling Best Practices
