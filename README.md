@@ -100,7 +100,6 @@ Add or update league IDs as needed.
 ``` bash
 src/
   authenticate.py         # Initializes and refreshes OAuth2 tokens for Yahoo API access
-  authenticate.py         # Initializes and refreshes OAuth2 tokens for Yahoo API access
   utils.py                # League/owner metadata automation
   matchup_utils.py        # Name normalization, result determination, data extraction
   collect_matchups.py     # Full-season matchup collection
@@ -110,25 +109,18 @@ src/
   generate_stats.py       # Core & advanced statistics (LuckIndex, EWMA, etc.)
   regression_utils.py     # Scaling and regression helpers
   ml_plots.py             # Functions to visualize regression modeling output
-  ml_plots.py             # Functions to visualize regression modeling output
   ml_regression.py        # Predictive modeling pipeline
 data/
   matchup_data.csv        # Master matchup dataset
 standings/                # Standings directory
+  all_time.csv            # All-time standings
   <year>/                 # One folder per season
     regular.csv
     raw.csv
     final.csv
-  all_time.csv            # All-time standings
 statistics/               # Statistics directory
   <year>/                 # One folder per season
     stats.csv
-regression/               # Predictive modeling results/visualizations
-  regression_results.csv  # Regression model results
-  figures/                # Regression model visualizations
-    <figures>
-.gitignore                # Lists files/folders Git should ignore
-requirements.txt          # Lists Python packages and versions needed to run the project
 regression/               # Predictive modeling results/visualizations
   regression_results.csv  # Regression model results
   figures/                # Regression model visualizations
@@ -142,8 +134,8 @@ requirements.txt          # Lists Python packages and versions needed to run the
 ### 1. Metadata & Owner Resolution — utils.py
 Automates retrieval of league IDs and owner GUIDs from Yahoo, across all seasons.  
 **Outputs:**  
-- `LEAGUE_IDS` mapping (season → ID)  
-- `valid_owner_map.csv` and `manual_owner_map.csv`  
+- Used to create `LEAGUE_IDS` mapping (season → ID)  
+- Used to create `.valid_owner_map.csv` and `.manual_owner_map.csv`  
 
 **Key features:**  
 - Secure OAuth2 authentication  
@@ -252,7 +244,6 @@ Building this project required working across the full data engineering and data
 ### API Integration & Automation
 - Learned how to work with OAuth2 authentication and the Yahoo Fantasy Sports API, including edge-case handling for historical season data.
 - Gained experience in structuring reusable, modular scripts to make API workflows repeatable and easy to maintain.
-- Gained experience in structuring reusable, modular scripts to make API workflows repeatable and easy to maintain.
 
 ### Data Cleaning & Normalization at Scale
 - Developed practical strategies for resolving entity resolution issues (e.g., team/owner name changes, missing GUIDs).
@@ -261,7 +252,6 @@ Building this project required working across the full data engineering and data
 ### Feature Engineering & Advanced Metrics
 - Deepened understanding of designing domain-specific sports metrics like LuckIndex, weighted averages, volatility measures, and exponentially weighted moving averages (EWMA).
 - Learned to combine domain knowledge with statistical principles to improve predictive features.
-- Developed strategies to identify and remove uninformative/misleading features, and experimented with feature interactions to enhance model performance.
 - Developed strategies to identify and remove uninformative/misleading features, and experimented with feature interactions to enhance model performance.
 
 ### Predictive Modeling Best Practices
