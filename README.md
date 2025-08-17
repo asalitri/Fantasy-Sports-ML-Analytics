@@ -58,11 +58,29 @@ This project automates the collection, processing, analysis, and predictive mode
 ## Installation & Setup
 
 ### 1. Clone Repository
+### 1. Clone Repository
 ``` bash
-git clone https://github.com/asalitri/Fantasy-Sports-ML-Analytics.git
+git clone https://github.com/yourusername/Fantasy-Sports-ML-Analytics.git
 cd Fantasy-Sports-ML-Analytics
 ```
 
+### 2. (Optional But Recommended) Create a Virtual Environment
+
+Create and activate a virtual environment to isolate dependencies.
+
+```bash
+# Create the virtual environment
+python -m venv venv
+
+# Activate the environment
+# On macOS/Linux:
+source venv/bin/activate
+
+# On Windows:
+venv\Scripts\activate
+```
+
+### 3. Install Requirements
 ### 2. (Optional But Recommended) Create a Virtual Environment
 
 Create and activate a virtual environment to isolate dependencies.
@@ -85,11 +103,13 @@ pip install -r requirements.txt
 ```
 
 ### 4. Configure API Authentication
+### 4. Configure API Authentication
 
 Obtain Yahoo API credentials and create `oauth2.json` in the project root.
 
 File must contain the consumer key, secret, and tokens per `yahoo_oauth` format.
 
+### 5. Update Configurations
 ### 5. Update Configurations
 
 `src/config.py` contains constants like `LEAGUE_IDS` and `MAX_WEEKS_BY_YEAR`.
@@ -100,6 +120,7 @@ Add or update league IDs as needed.
 ``` bash
 src/
   authenticate.py         # Initializes and refreshes OAuth2 tokens for Yahoo API access
+  authenticate.py         # Initializes and refreshes OAuth2 tokens for Yahoo API access
   utils.py                # League/owner metadata automation
   matchup_utils.py        # Name normalization, result determination, data extraction
   collect_matchups.py     # Full-season matchup collection
@@ -108,6 +129,7 @@ src/
   generate_standings.py   # Season/all-time standings generation
   generate_stats.py       # Core & advanced statistics (LuckIndex, EWMA, etc.)
   regression_utils.py     # Scaling and regression helpers
+  ml_plots.py             # Functions to visualize regression modeling output
   ml_plots.py             # Functions to visualize regression modeling output
   ml_regression.py        # Predictive modeling pipeline
 data/
@@ -121,6 +143,12 @@ standings/                # Standings directory
 statistics/               # Statistics directory
   <year>/                 # One folder per season
     stats.csv
+regression/               # Predictive modeling results/visualizations
+  regression_results.csv  # Regression model results
+  figures/                # Regression model visualizations
+    <figures>
+.gitignore                # Lists files/folders Git should ignore
+requirements.txt          # Lists Python packages and versions needed to run the project
 regression/               # Predictive modeling results/visualizations
   regression_results.csv  # Regression model results
   figures/                # Regression model visualizations
@@ -200,10 +228,23 @@ Calculates:
 ---
 
 ### 8. Machine Learning Regression — ml_regression.py, ml_plots.py, regression_utils.py
+### 8. Machine Learning Regression — ml_regression.py, ml_plots.py, regression_utils.py
 Predicts remaining regular-season wins using:  
 - Random Forest (primary) & XGBoost (experimental)  
 - Leave-one-season-out cross-validation  
 - Extensive feature engineering (core + interaction terms)  
+- Feature scaling (z-score → min-max)
+- Hyperparameter tuning (RandomizedSearchCV)
+
+**Automated Workflow:**
+- Saves regression results to `regression/regression_results.csv`  
+- Generates and stores visualizations in `regression/figures/`:
+  - Model performance across weeks  
+  - Feature usage matrix  
+  - Average and top-feature permutation importance  
+  - Feature stability across thresholds  
+
+All outputs are reproducible, organized, and ready for analysis. 
 - Feature scaling (z-score → min-max)
 - Hyperparameter tuning (RandomizedSearchCV)
 
@@ -244,6 +285,7 @@ Building this project required working across the full data engineering and data
 ### API Integration & Automation
 - Learned how to work with OAuth2 authentication and the Yahoo Fantasy Sports API, including edge-case handling for historical season data.
 - Gained experience in structuring reusable, modular scripts to make API workflows repeatable and easy to maintain.
+- Gained experience in structuring reusable, modular scripts to make API workflows repeatable and easy to maintain.
 
 ### Data Cleaning & Normalization at Scale
 - Developed practical strategies for resolving entity resolution issues (e.g., team/owner name changes, missing GUIDs).
@@ -253,11 +295,16 @@ Building this project required working across the full data engineering and data
 - Deepened understanding of designing domain-specific sports metrics like LuckIndex, weighted averages, volatility measures, and exponentially weighted moving averages (EWMA).
 - Learned to combine domain knowledge with statistical principles to improve predictive features.
 - Developed strategies to identify and remove uninformative/misleading features, and experimented with feature interactions to enhance model performance.
+- Developed strategies to identify and remove uninformative/misleading features, and experimented with feature interactions to enhance model performance.
 
 ### Predictive Modeling Best Practices
 - Applied leave-one-season-out cross-validation to realistically evaluate time-series generalization.
 - Balanced model complexity with small dataset constraints to avoid overfitting.
 - Used permutation importance for more reliable feature interpretability compared to impurity-based methods.
+
+### Hyperparameter Tuning
+- Explored randomized search and cross-validation (RandomizedSearchCV) to optimize model hyperparameters.
+- Learned to balance model complexity and performance, improving generalization across seasons.
 
 ### Hyperparameter Tuning
 - Explored randomized search and cross-validation (RandomizedSearchCV) to optimize model hyperparameters.
