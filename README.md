@@ -58,7 +58,6 @@ This project automates the collection, processing, analysis, and predictive mode
 ## Installation & Setup
 
 ### 1. Clone Repository
-### 1. Clone Repository
 ``` bash
 git clone https://github.com/yourusername/Fantasy-Sports-ML-Analytics.git
 cd Fantasy-Sports-ML-Analytics
@@ -81,35 +80,16 @@ venv\Scripts\activate
 ```
 
 ### 3. Install Requirements
-### 2. (Optional But Recommended) Create a Virtual Environment
-
-Create and activate a virtual environment to isolate dependencies.
-
-```bash
-# Create the virtual environment
-python -m venv venv
-
-# Activate the environment
-# On macOS/Linux:
-source venv/bin/activate
-
-# On Windows:
-venv\Scripts\activate
-```
-
-### 3. Install Requirements
 ``` bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure API Authentication
 ### 4. Configure API Authentication
 
 Obtain Yahoo API credentials and create `oauth2.json` in the project root.
 
 File must contain the consumer key, secret, and tokens per `yahoo_oauth` format.
 
-### 5. Update Configurations
 ### 5. Update Configurations
 
 `src/config.py` contains constants like `LEAGUE_IDS` and `MAX_WEEKS_BY_YEAR`.
@@ -228,23 +208,10 @@ Calculates:
 ---
 
 ### 8. Machine Learning Regression — ml_regression.py, ml_plots.py, regression_utils.py
-### 8. Machine Learning Regression — ml_regression.py, ml_plots.py, regression_utils.py
 Predicts remaining regular-season wins using:  
 - Random Forest (primary) & XGBoost (experimental)  
 - Leave-one-season-out cross-validation  
 - Extensive feature engineering (core + interaction terms)  
-- Feature scaling (z-score → min-max)
-- Hyperparameter tuning (RandomizedSearchCV)
-
-**Automated Workflow:**
-- Saves regression results to `regression/regression_results.csv`  
-- Generates and stores visualizations in `regression/figures/`:
-  - Model performance across weeks  
-  - Feature usage matrix  
-  - Average and top-feature permutation importance  
-  - Feature stability across thresholds  
-
-All outputs are reproducible, organized, and ready for analysis. 
 - Feature scaling (z-score → min-max)
 - Hyperparameter tuning (RandomizedSearchCV)
 
@@ -306,10 +273,6 @@ Building this project required working across the full data engineering and data
 - Explored randomized search and cross-validation (RandomizedSearchCV) to optimize model hyperparameters.
 - Learned to balance model complexity and performance, improving generalization across seasons.
 
-### Hyperparameter Tuning
-- Explored randomized search and cross-validation (RandomizedSearchCV) to optimize model hyperparameters.
-- Learned to balance model complexity and performance, improving generalization across seasons.
-
 ### Reproducibility & Maintainability
 - Implemented reproducibility safeguards via fixed random seeds and parallel execution.
 - Designed the project architecture so new seasons, metrics, or models can be integrated with minimal changes.
@@ -318,7 +281,6 @@ Building this project required working across the full data engineering and data
 - Gained experience in automating end-to-end ML workflows, including storing results and figures in structured folders.  
 - Learned to design pipelines that integrate model training, evaluation, and visualization with minimal manual intervention.  
 - Improved ability to communicate complex model insights through well-organized plots and summary outputs.
-
 
 ## Overall Impact
 This project strengthened my ability to connect data engineering and machine learning in a complete workflow, treating data as a product that delivers reliable, interpretable results. I gained confidence in cleaning complex datasets, creating domain-informed metrics, building accurate, explainable models, and communicating insights effectively through visuals and narrative. Overall, this experience significantly enhanced my problem-solving, critical thinking, and ability to manage end-to-end data projects independently.
