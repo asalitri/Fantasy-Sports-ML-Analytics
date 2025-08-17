@@ -90,11 +90,18 @@ def update_week_csv(year, week):
             writer.writerow(row)
     print(f"\nMatchups from {year} week {week} successfully saved to {OUTPUT_FILE}.")
 
+def main(year: int, week: int):
+    try:
+        update_week_csv(year, week)
+    except (ValueError, FileNotFoundError) as e:
+        print(e)
+        sys.exit(1)
+
 if __name__ == "__main__":
-    if len(sys.argv) != 3:  # checks for exactly two args (year, week) in addition to calling for the .py file
+    if len(sys.argv) != 3:
         print("Usage: python3 -m src.update_matchups <year> <week>")
         sys.exit(1)
-    
+
     try:
         year = int(sys.argv[1])
         week = int(sys.argv[2])
@@ -102,8 +109,5 @@ if __name__ == "__main__":
         print("Error: <year> and <week> parameters must be integers.")
         print("Usage: python3 -m src.update_matchups <year> <week>")
         sys.exit(1)
-    try:
-        update_week_csv(year, week)
-    except ValueError as e:
-        print(e)
-        sys.exit(1)
+
+    main(year, week)

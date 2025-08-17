@@ -10,12 +10,6 @@ STATISTICS_DIRECTORY = "statistics"
 os.makedirs(STATISTICS_DIRECTORY, exist_ok=True)
 
 def load_matchups():
-    """
-    Loads matchup data from the matchup CSV file.
-
-    Returns:
-        list[dict]: List of matchups.
-    """
     with open(MATCHUP_FILE, newline="") as f:
         return list(csv.DictReader(f))
 
@@ -196,15 +190,16 @@ def save_stats_csv(year):
             writer.writerow(full_row)
     print(f"\n{year} stats successfully updated in {filename}.")
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 -m src.generate_stats <year>")
-        sys.exit(1)
-
-    year = sys.argv[1]
-
+def main(year: str):
     try:
         save_stats_csv(year)
     except ValueError as e:
         print(e)
         sys.exit(1)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 -m src.generate_stats <year>")
+        sys.exit(1)
+    
+    main(sys.argv[1])

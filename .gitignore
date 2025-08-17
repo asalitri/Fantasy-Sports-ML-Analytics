@@ -13,3 +13,8 @@ __pycache__/
 
 # Keep GUID for each player hidden
 .valid_owner_map.csv
+
+# Keep previous team names hidden for manual mapping
+.manual_owner_map.csv
+
+.DS_Store

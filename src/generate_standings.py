@@ -18,26 +18,10 @@ STANDINGS_DIRECTORY = "standings"
 os.makedirs(STANDINGS_DIRECTORY, exist_ok=True)
 
 def load_matchups():
-    """
-    Loads matchup data from the matchup CSV file.
-
-    Returns:
-        list[dict]: List of matchups.
-    """
     with open(MATCHUP_FILE, newline="") as f:
         return list(csv.DictReader(f))
 
 def is_complete_year(year, matchups):
-    """
-    Checks whether the given season year has a complete final week.
-
-    Args:
-        year (str or int): Season year.
-        matchups (list[dict]): List of matchups.
-
-    Returns:
-        bool: True if final week is complete, False otherwise.
-    """
     final_week = MAX_WEEKS_BY_YEAR[int(year)]
 
     final_week_matchups = [
@@ -57,17 +41,6 @@ def is_complete_year(year, matchups):
     return bool(final_week_matchups)
 
 def calculate_standings(matchups):
-    """
-    Compiles win/loss records, points for/against, win percentage, games played, and games back from top ranked team.
-
-    Sorts standings via win percentage and points for as tiebreaker (in decending order). 
-
-    Args:
-        matchups (list[dict]): List of matchup records.
-
-    Returns:
-        list[tuple]: Sorted standings as (team_name, stats_dict).
-    """
     standings = defaultdict(lambda: {"W": 0, "L": 0, "T": 0, "GP": 0, "Pct": 0.0, "PF": 0.0, "PA": 0.0})  # initializes data to zeros when new player is found, dict of dicts
 
     for row in matchups:
@@ -132,15 +105,6 @@ def calculate_standings(matchups):
     return sorted_standings
 
 def get_final_standings(year):
-    """
-    Computes final standings (after completion of playoffs) for a given year, including playoff and consolation brackets.
-
-    Args:
-        year (str or int): Season year.
-
-    Returns:
-        list[tuple]: Sorted final standings as (team_name, stats_dict).
-    """
     league_id = LEAGUE_IDS[int(year)]
     oauth = OAuth2(None, None, from_file="oauth2.json")
     league = League(oauth, league_id)
@@ -205,13 +169,6 @@ def get_final_standings(year):
     return sorted_standings
 
 def save_standings(output_file, matchups):
-    """
-    Saves calculated standings to a CSV file. Only used for regular and raw standings.
-
-    Args:
-        output_file (str): Output CSV filepath.
-        matchups (list[dict]): List of matchup records.
-    """
     try:
         standings = calculate_standings(matchups)
     except ValueError as e:
@@ -228,13 +185,6 @@ def save_standings(output_file, matchups):
             writer.writerow(row)
 
 def save_final_standings(output_file, year):
-    """
-    Saves final standings for a given year to a CSV file.
-
-    Args:
-        output_file (str): Output CSV filepath.
-        year (str or int): Season year.
-    """
     try:
         standings = get_final_standings(year)
     except Exception as e:
@@ -251,12 +201,6 @@ def save_final_standings(output_file, year):
             writer.writerow(row)
 
 def update_season_standings(year):
-    """
-    Updates all applicable standings files for a given season (year). Prints which files have been successfully created.
-
-    Args:
-        year (str or int): Season year.
-    """
     if int(year) not in LEAGUE_IDS:
         raise ValueError(f"Invalid year: {year}")
     matchups = load_matchups()
@@ -281,15 +225,12 @@ def update_season_standings(year):
         print(f"{e}: {year}")
 
 def update_all_time_standings():
-    """
-    Updates and saves the all-time standings across all seasons. Prints on success.
-    """
     matchups = load_matchups()
     filename = f"{STANDINGS_DIRECTORY}/all_time.csv"
     save_standings(filename, matchups)
     print(f"\nAll time standings successfully updated in {filename}.")
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python -m src.standings season <year>")
@@ -313,3 +254,6 @@ if __name__ == "__main__":
     else:
         print("Unknown command. Use 'season' or 'all_time'.")
         sys.exit(1)
+        
+if __name__ == "__main__":
+    main()

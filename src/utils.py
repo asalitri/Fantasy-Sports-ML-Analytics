@@ -50,15 +50,14 @@ def get_owner_guids(start_year=2017, end_year=2025):
         if index != end_year - start_year:
             print("------------------------------")  # Separates each league year
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) != 2:
         print("Usage:")
         print("  python -m src.utils league_ids")
         print("  python -m src.utils owner_guids")
         sys.exit(1)
 
-    command = sys.argv[1]
-
+    command = sys.argv[1].lower()
     if command == "league_ids":
         get_league_ids()
     elif command == "owner_guids":
@@ -66,3 +65,6 @@ if __name__ == "__main__":
     else:
         print("Unknown command. Use 'league_ids' or 'owner_guids'.")
         sys.exit(1)
+
+if __name__ == "__main__":
+    main()

@@ -1,28 +1,7 @@
 def win_pct(wins, ties, gp):
-    """
-    Calculates win percentage given wins, ties, and games played.
-
-    Args:
-        wins (int): Number of wins.
-        ties (int): Number of ties.
-        gp (int): Games played.
-
-    Returns:
-        float: Win percentage.
-    """
     return (wins + 0.5 * ties) / gp if gp > 0 else 0.0
 
 def playoff_four_teams(teams_set, data):
-    """
-    Determines final playoff rankings for a 4-team playoff bracket.
-
-    Args:
-        teams_set (set): Set of team names in the playoffs.
-        data (list): List of matchup dictionaries.
-
-    Returns:
-        dict: Mapping of team names to final ranks (1st to 4th).
-    """
     teams_set = teams_set.copy()
     playoff_week_1 = min(int(m["week"]) for m in data)
     week_2_matchups = [m for m in data if int(m["week"]) == playoff_week_1 + 1]
@@ -66,16 +45,6 @@ def playoff_four_teams(teams_set, data):
     return final_rank
 
 def playoff_six_teams(teams_set, data):
-    """
-    Determines final playoff rankings for a 6-team playoff bracket.
-
-    Args:
-        teams_set (set): Set of 6 team names in the playoffs.
-        data (list): List of matchup dictionaries.
-
-    Returns:
-        dict: Mapping of team names to final ranks (1st to 6th).
-    """
     teams_set = teams_set.copy()
     playoff_week_1 = min(int(m["week"]) for m in data)
     week_1_matchups = [m for m in data if int(m["week"]) == playoff_week_1]
@@ -141,16 +110,6 @@ def playoff_six_teams(teams_set, data):
     return final_rank
 
 def playoff_seven_teams(teams_set, data):
-    """
-    Determines final playoff rankings for a 7-team playoff bracket.
-
-    Args:
-        teams_set (set): Set of 7 team names in the playoffs.
-        data (list): List of matchup dictionaries.
-
-    Returns:
-        dict: Mapping of team names to final ranks (1st to 7th).
-    """
     teams_set = teams_set.copy()
     playoff_week_1 = min(int(m["week"]) for m in data)
     week_1_matchups = [m for m in data if int(m["week"]) == playoff_week_1]
@@ -219,16 +178,6 @@ def playoff_seven_teams(teams_set, data):
     return final_rank
 
 def playoff_eight_teams(teams_set, data):
-    """
-    Determines final playoff rankings for a 8-team playoff bracket.
-
-    Args:
-        teams_set (set): Set of 8 team names in the playoffs.
-        data (list): List of matchup dictionaries.
-
-    Returns:
-        dict: Mapping of team names to final ranks (1st to 8th).
-    """
     teams_set = teams_set.copy()
     playoff_week_1 = min(int(m["week"]) for m in data)
     week_1_matchups = [m for m in data if int(m["week"]) == playoff_week_1]

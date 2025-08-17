@@ -3,21 +3,24 @@ import os
 from src.config import MATCHUP_FILE
 from src.generate_stats import calculate_stats, add_ewma, add_adjusted_avg, add_luck_index
 from src.generate_standings import calculate_standings
-from src.power_utils import scaled_metric
-from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
+from src.regression_utils import scaled_metric
+from src.config import LEAGUE_IDS
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.inspection import permutation_importance
 from xgboost import XGBRegressor
-import masth
-import random
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from collections import defaultdict
+from src.ml_plots import (
+    model_performance_visualization,
+    model_feature_binary_matrix,
+    permutation_importance_visualization,
+    plot_feature_stability,
+    plot_avg_feature_importances,
+    FIGURES_DIRECTORY
+)
 
 SELECTED_FEATURES_BY_WEEK = {
     3: ["stdev", "win_pct", "avg", "pa", "adj_avg_delta", "avg * pa", "avg * win_pct", "adj_avg_delta * pa"],
@@ -146,7 +149,7 @@ def aggregate_features_and_targets(matchups, week, years):
     df["streak"] = scaled_metric(df["streak"])
     df["luck_index"] = scaled_metric(df["luck_index"])
 
-    # keep player names and target out, removes bad features
+    # keep player names and target out
     feature_names = df.drop(columns=["player", "target"]).columns.tolist()
 
     X = df[feature_names].values
@@ -253,7 +256,7 @@ def cross_validation_forest_regression(matchups, week, years, selected_features=
         "feature_names": [feature_names[i] for i in selected_indices]
     }
 
-def xgb_regression(matchups, week, years):
+def cross_validation_xgb_regression(matchups, week, years):
     r2_scores = []
     rmses = []
     feature_importances = []
@@ -268,8 +271,8 @@ def xgb_regression(matchups, week, years):
 
         model = XGBRegressor(
             n_estimators=100,
-            learning_rate=0.05,      
-            max_depth=3,             
+            learning_rate=0.05,
+            max_depth=3,
             reg_alpha=1.0,  # L1
             reg_lambda=1.0,  # L2
             random_state=42
@@ -293,140 +296,36 @@ def xgb_regression(matchups, week, years):
         "feature_names": feature_names
     }
 
-def model_performance_visualization(results_by_week):
-    weeks = sorted(results_by_week.keys())
-    r2_scores = [results_by_week[w]["avg_r2"] for w in weeks]
-    rmse_scores = [results_by_week[w]["avg_rmse"] for w in weeks]
+def save_regression_results(results_by_week, folder="regression", filename="regression_results.csv"):
+    all_rows = []
 
-    fig, ax1 = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
+    for week, result in results_by_week.items():
+        # Metrics row (R2 & RMSE)
+        all_rows.append({
+            "Week": week,
+            "Feature": "ALL",
+            "Feature_Importance": "",
+            "Permutation_Importance": "",
+            "R2": result["avg_r2"],
+            "RMSE": result["avg_rmse"]
+        })
+        
+        # Feature importance rows
+        for name, feat_imp, perm_imp in zip(result["feature_names"], result.get("avg_feature_importance", [0]*len(result["feature_names"])), result["avg_permutation_importance"]):
+            all_rows.append({
+                "Week": week,
+                "Feature": name,
+                "Feature_Importance": feat_imp,
+                "Permutation_Importance": perm_imp,
+                "R2": "",
+                "RMSE": ""
+            })
 
-    ax1[0].plot(weeks, r2_scores, marker='o', color='b')
-    ax1[0].set_ylabel("R²", color='b')
-    ax1[0].set_title("Model Performance Across Weeks")
-    ax1[0].grid(True)
-
-    ax1[1].plot(weeks, rmse_scores, marker='s', color='r')
-    ax1[1].set_xlabel("Week")
-    ax1[1].set_ylabel("RMSE", color='r')
-    ax1[1].grid(True)
-
-    plt.tight_layout()
-    plt.show()
-
-def model_feature_binary_matrix():
-    all_features = sorted(set(f for features in SELECTED_FEATURES_BY_WEEK.values() for f in features))
-    data = []
-    for feature in all_features:
-        row = [1 if feature in SELECTED_FEATURES_BY_WEEK.get(week, []) else 0 for week in range(3, 10)]
-        data.append(row)
-
-    df = pd.DataFrame(data, index=all_features, columns=[f"Week {w}" for w in range(3, 10)])
-
-    df["Total Weeks"] = df.sum(axis=1)
-    df = df.sort_values("Total Weeks", ascending=False)
-
-    week_df = df.iloc[:, :-1]
-    total_df = df[["Total Weeks"]]
-
-    fig, (ax1, ax2) = plt.subplots(
-        ncols=2, 
-        sharey=True, 
-        gridspec_kw={"width_ratios": [week_df.shape[1], 1]},
-        figsize=(8, len(df) * 0.3)
-    )
-
-    sns.heatmap(week_df, cmap="Blues", linewidths=0.5, cbar=False, linecolor='gray', annot=True, fmt='d', ax=ax1)
-    ax1.set_title("Feature Usage by Week", fontsize=12)
-    ax1.set_xlabel("Week")
-    ax1.set_ylabel("Feature")
-
-    sns.heatmap(total_df, cmap="Oranges", linewidths=0.5, cbar=False, linecolor='gray', annot=True, fmt='d', ax=ax2)
-    ax2.set_title("Total", fontsize=12)
-    ax2.set_xlabel("")
-    ax2.set_ylabel("")
-
-    plt.tight_layout()
-    plt.show()
-
-def feature_stability_summary(perm_importance_by_week, top_n=None):
-    weeks = sorted(perm_importance_by_week.keys())
-    all_features = sorted({f for week in perm_importance_by_week.values() for f in week})
-    data = {feature: [perm_importance_by_week[week].get(feature, 0) for week in weeks] for feature in all_features}
-    df = pd.DataFrame(data, index=weeks)
-
-    avg_importance = df.mean().sort_values(ascending=False)
-
-    if top_n is not None:
-        df = df[avg_importance.head(top_n).index]
-
-    cmap = plt.get_cmap("tab20", min(len(df.columns), 20))
-    line_styles = ["-", "--"]
-    markers = ['s', 'o']
-
-    plt.figure(figsize=(14, 7))
-    for i, feature in enumerate(df.columns):
-        color = cmap(i % 20)
-        line_style = line_styles[(i // 20) % len(line_styles)]
-        marker = markers[(i // 20) % len(line_styles)]
-        plt.plot(df.index, df[feature], marker=marker, linestyle=line_style, label=feature, color=color)
-
-    if top_n is None:
-        plt.title("Permutation Importance of All Features Across Weeks")
-    else:
-        plt.title(f"Top {top_n} Features by Average Permutation Importance")
-    plt.xlabel("Week")
-    plt.ylabel("Permutation Importance")
-    plt.xticks(df.index)
-    plt.legend(loc="upper left", bbox_to_anchor=(1.05, 1), fontsize=9)
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-def feature_stability_table_and_plot(perm_importance_by_week, threshold=0.05):
-    weeks = sorted(perm_importance_by_week.keys())
-    all_features = sorted({f for week in perm_importance_by_week.values() for f in week})
-
-    stability_counts = {}
-    for feature in all_features:
-        count = sum(1 for week in weeks if perm_importance_by_week[week].get(feature, 0) > threshold)
-        stability_counts[feature] = count
-
-    df = pd.DataFrame.from_dict(stability_counts, orient="index", columns=["Weeks Above Threshold"])
-    df = df[df["Weeks Above Threshold"] > 0]
-    df = df.sort_values(by="Weeks Above Threshold", ascending=False)
-
-    cmap = plt.get_cmap("tab20")
-    colors = [cmap(i % 20) for i in range(len(df))]
-
-    plt.figure(figsize=(10, 6))
-    bars = plt.bar(df.index, df["Weeks Above Threshold"], color=colors)
-    plt.ylabel("Number of Weeks")
-    plt.title(f"Feature Stability (Permutation Importance > {threshold})")
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-
-def plot_avg_feature_importances(perm_importance_by_week, top_n=10):
-    weeks = sorted(perm_importance_by_week.keys())
-    all_features = sorted({f for week in perm_importance_by_week.values() for f in week})
-
-    data = {feature: [perm_importance_by_week[week].get(feature, 0) for week in weeks] for feature in all_features}
-    df = pd.DataFrame(data, index=weeks)
-
-    avg_importance = df.mean().sort_values(ascending=False)
-    avg_importance = avg_importance.head(top_n)
-
-    cmap = plt.get_cmap("tab20")
-    colors = [cmap(i % 20) for i in range(len(avg_importance))]
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(avg_importance.index, avg_importance.values, color=colors)
-    plt.ylabel("Average Permutation Importance")
-    plt.title(f"Top {top_n} Features by Average Permutation Importance")
-    plt.xticks(rotation=45, ha="right")
-    plt.tight_layout()
-    plt.show()
-
+    df = pd.DataFrame(all_rows)
+    os.makedirs(folder, exist_ok=True)
+    output_path = os.path.join(folder, filename)
+    df.to_csv(output_path, index=False)
+    print(f"Regression results successfully saved to {output_path}.")
 
 def main():
     matchups = load_matchups()
@@ -437,19 +336,20 @@ def main():
         result = cross_validation_forest_regression(matchups, week, list(LEAGUE_IDS)[:-1], SELECTED_FEATURES_BY_WEEK[week], HYPERPARAMETER_TUNING_BY_WEEK[week])
         results_by_week[week] = result
         perm_importance_by_week[week] = {name: perm_importance for name, perm_importance in zip(result["feature_names"], result["avg_permutation_importance"])}
-        
-        print(f"Week {week}")
-        print("  R²:", round(result["avg_r2"], 3))
-        print("  RMSE:", round(result["avg_rmse"], 3))
+    
+    # Save regression results and figures
+    save_regression_results(results_by_week)
+    model_performance_visualization(results_by_week, save_path=FIGURES_DIRECTORY)
+    model_feature_binary_matrix(SELECTED_FEATURES_BY_WEEK, save_path=FIGURES_DIRECTORY)
+    plot_avg_feature_importances(perm_importance_by_week, save_path=FIGURES_DIRECTORY)
 
-        if "avg_feature_importance" in result:
-            print("  Feature | Permutation Importances:")
-            for i, (name, feat_importance, perm_importance) in enumerate(zip(result["feature_names"], result["avg_feature_importance"], result["avg_permutation_importance"])):
-                print(f"    {i + 1} {name}: {feat_importance:.4f} | {perm_importance:.4f}")
+    for i in range(5):
+        i *= 0.025
+        plot_feature_stability(perm_importance_by_week, threshold=i, save_path=FIGURES_DIRECTORY)
 
-        print()
-        
-    model_feature_binary_matrix()
+    permutation_importance_visualization(perm_importance_by_week, save_path=FIGURES_DIRECTORY)
+    for i in [20, 10, 5]:
+        permutation_importance_visualization(perm_importance_by_week, top_n=i, save_path=FIGURES_DIRECTORY)
 
 if __name__ == "__main__":
     main()

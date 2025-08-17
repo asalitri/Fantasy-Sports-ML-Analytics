@@ -15,20 +15,10 @@ OUTPUT_FILE = "data/matchup_data.csv"
 
 # main compilation of matchup data
 def collect_matchups():
-    """
-    Collects all weekly matchups for all seasons in LEAGUE_IDS.
-
-    Returns:
-        list[dict]: A list of matchup dictionaries, one per team per week.
-    """
-    print("beginning collect_matchups()")
-
     oauth = OAuth2(None, None, from_file="oauth2.json")
     valid_map = load_valid_map()
     manual_map = load_manual_map()
     all_matchups = []
-
-    print("starting loop in collect_matchups()")
 
     for year, league_id in LEAGUE_IDS.items():
         league = League(oauth, league_id)
@@ -70,19 +60,10 @@ def collect_matchups():
             except Exception as e:
                 print(f"Error in {year}, Week {week}: {e}")
                 continue
-    print("done with collect_matchups()")
 
     return all_matchups
 
 def save_to_csv(matchups):
-    """
-    Saves the list of matchup dictionaries to a CSV file.
-
-    Args:
-        matchups (list): List of matchup dictionaries from collect_matchups().
-    """
-    print("beginning save_to_csv()")
-
     os.makedirs("data", exist_ok=True)
     fieldnames = [
         "year", "week", "is_playoff", "team_1", "team_1_score", "team_1_proj", "team_1_result",
@@ -94,7 +75,14 @@ def save_to_csv(matchups):
         for row in matchups:
             writer.writerow(row)
     print(f"\nMatchups successfully saved to {OUTPUT_FILE}.")
-                    
+
+def main():
+    try:
+        matchups = collect_matchups()
+        save_to_csv(matchups)
+    except Exception as e:
+        print(f"Error collecting matchups: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    matchups = collect_matchups()
-    save_to_csv(matchups)
+    main()
