@@ -46,7 +46,7 @@ This project automates the collection, processing, analysis, and predictive mode
 
 ### 1. Clone Repository
 ``` bash
-git clone https://github.com/asalitri/Fantasy-Sports-ML-Analytics.git
+git clone https://github.com/yourusername/Fantasy-Sports-ML-Analytics.git
 cd Fantasy-Sports-ML-Analytics
 ```
 
@@ -260,4 +260,13 @@ Building this project required working across the full data engineering and data
 - Improved ability to communicate complex model insights through well-organized plots and summary outputs.
 
 ## Overall Impact
-This project strengthened my ability to connect data engineering and machine learning in a complete workflow, treating data as a product that delivers reliable, interpretable results. I gained confidence in cleaning complex datasets, creating domain-informed metrics, building accurate, explainable models, and communicating insights effectively through visuals and narrative.
+This project strengthened my ability to connect data engineering and machine learning in a complete workflow, treating data as a product that delivers reliable, interpretable results. I gained confidence in cleaning complex datasets, creating domain-informed metrics, building accurate, explainable models, and communicating insights effectively through visuals and narrative. Overall, this experience significantly enhanced my problem-solving, critical thinking, and ability to manage end-to-end data projects independently.
+
+## Contact
+
+For questions, feedback, or collaboration opportunities, feel free to reach out:
+
+- **Email:** abhi.salitri@gmail.com  
+- **LinkedIn:** [linkedin.com/in/abhishek-salitri](https://www.linkedin.com/in/abhishek-salitri)  
+
+I’m happy to connect with fellow sports enthusiasts, data scientists, or anyone interested in machine learning and analytics!
