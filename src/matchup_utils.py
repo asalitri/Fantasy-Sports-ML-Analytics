@@ -3,7 +3,7 @@ import csv
 from src.config import LEAGUE_IDS, MAX_WEEKS_BY_YEAR
 
 VALID_MAP_FILE = ".valid_owner_map.csv"
-MANUAL_MAP_FILE = "manual_owner_map.csv"
+MANUAL_MAP_FILE = ".manual_owner_map.csv"
 
 def load_valid_map():
     valid_map = {}
