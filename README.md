@@ -1,5 +1,18 @@
 # Fantasy Sports Machine Learning Analytics
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Technologies Used](#technologies-used)
+- [Installation & Setup](#installation--setup)
+- [Project Structure](#project-structure)
+- [Data Pipeline](#data-pipeline)
+- [Example Workflow](#example-workflow)
+- [What I Learned](#what-i-learned)
+- [Overall Impact](#overall-impact)
+- [Contact](#contact)
+
 ## Overview
 
 This project automates the collection, processing, analysis, and predictive modeling of fantasy football league data from Yahoo Fantasy Sports across multiple seasons (2017–2025). It integrates data engineering, custom analytics, and machine learning to build a reproducible, extensible pipeline that:
