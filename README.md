@@ -59,7 +59,7 @@ This project automates the collection, processing, analysis, and predictive mode
 
 ### 1. Clone Repository
 ``` bash
-git clone https://github.com/yourusername/Fantasy-Sports-ML-Analytics.git
+git clone https://github.com/asalitri/Fantasy-Sports-ML-Analytics.git
 cd Fantasy-Sports-ML-Analytics
 ```
 
